@@ -1,12 +1,14 @@
-export const HOST = "https://<domain>";
-export const CLIENT_ID = "36859136832-1fiif7tqkl57sck2e80349oetgbhrb3a.apps.googleusercontent.com";
+export const HOST = process.env.APP_HOST || "https://<domain>";
+export const CLIENT_ID =
+    process.env.CLIENT_ID ||
+    "36859136832-1fiif7tqkl57sck2e80349oetgbhrb3a.apps.googleusercontent.com";
 
 // PSQL config
-export const PSQL_USER = "root";
-export const PSQL_PASS = "root";
-export const PSQL_DB = "odoo_gmail_addin_db";
-export const PSQL_HOST = "localhost";
-export const PSQL_PORT = 5432;
+export const PSQL_USER = process.env.PSQL_USER || "root";
+export const PSQL_PASS = process.env.PSQL_PASS || "root";
+export const PSQL_DB = process.env.PSQL_DB || "odoo_gmail_addin_db";
+export const PSQL_HOST = process.env.PSQL_HOST || "localhost";
+export const PSQL_PORT = Number(process.env.PSQL_PORT || 5432);
 
 export const URLS: Record<string, string> = {
     GET_TRANSLATIONS: "/mail_plugin/get_translations",

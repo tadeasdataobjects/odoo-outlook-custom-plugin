@@ -4,7 +4,8 @@ and also to link your Gmail contacts to your Odoo partners, to create leads from
 
 # Development
 Create the database and fill the credentials in `consts.ts`
-> psql -U root -d postgres -f init_db.sql
+> createdb odoo_gmail_addin
+> psql -f init_db.sql odoo_gmail_addin
 
 To serve the addin, you need a public HTTPS connection to your application.
 You cannot use nrgok, because Gmail store all images we use in the addin,

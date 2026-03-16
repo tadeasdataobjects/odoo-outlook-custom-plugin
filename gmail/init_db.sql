@@ -1,8 +1,14 @@
-CREATE DATABASE odoo_gmail_addin_db;
+-- For production:
+-- CREATE DATABASE must be run as root (e.g. postgres).
+-- This script must be run as a dedicated user (e.g. gmail_addin) which has
+-- the rights to create and alter tables.
+-- For development:
+-- CREATE DATABASE as well as this script can be run as any superuser.
+-- Example:
+-- createdb odoo_gmail_addin
+-- psql -f init_db.sql odoo_gmail_addin
 
-\c odoo_gmail_addin_db;
-
-CREATE TABLE users_settings (
+CREATE TABLE IF NOT EXISTS users_settings (
     id SERIAL PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     odoo_url TEXT,
@@ -13,8 +19,7 @@ CREATE TABLE users_settings (
     translations_expire_at TIMESTAMP WITH TIME ZONE
 );
 
--- Remember that the user logged the email on the giver record
-CREATE TABLE email_logs (
+CREATE TABLE IF NOT EXISTS email_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     message_id TEXT NOT NULL,

@@ -6,7 +6,7 @@ export const CLIENT_ID =
 // PSQL config
 export const PSQL_USER = process.env.PSQL_USER || "root";
 export const PSQL_PASS = process.env.PSQL_PASS || "root";
-export const PSQL_DB = process.env.PSQL_DB || "odoo_gmail_addin_db";
+export const PSQL_DB = process.env.PSQL_DB || "odoo_gmail_addin";
 export const PSQL_HOST = process.env.PSQL_HOST || "localhost";
 export const PSQL_PORT = Number(process.env.PSQL_PORT || 5432);
 

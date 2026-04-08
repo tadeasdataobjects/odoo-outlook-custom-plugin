@@ -243,7 +243,7 @@ export class Email {
      *     False if we already logged the email on the record
      */
     async setLoggingState(user: User, resModel: string, resId: number) {
-        console.log(`Logging email for user ${user.email}`)
+        console.log(`Logging email for user ${user.email}`);
         this.loggingState[resModel].push(resId);
         await pool.query(
             `

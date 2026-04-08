@@ -40,7 +40,7 @@ export class User {
     }
 
     async save() {
-        console.log(`Saving user ${this.email}`)
+        console.log(`Saving user ${this.email}`);
         await pool.query(
             `
                 INSERT INTO users_settings (

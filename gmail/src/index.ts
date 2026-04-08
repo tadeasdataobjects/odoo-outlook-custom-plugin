@@ -198,7 +198,7 @@ app.use("/assets", async (req, res, next) => {
 app.use("/render_button/:backgroundColor/:textColor/:label", async (req, res, next) => {
     const { backgroundColor, textColor, label } = req.params;
     if (!/^[0-9a-z]{6}$/.test(backgroundColor) || !/^[0-9a-z]{6}$/.test(textColor)) {
-        console.error("Invalid color code", req.params)
+        console.error("Invalid color code", req.params);
         res.sendStatus(404);
         return;
     }
@@ -213,7 +213,7 @@ app.use("/render_button/:backgroundColor/:textColor/:label", async (req, res, ne
     try {
         svgToPngResponse(Buffer.from(svgText), res);
     } catch (err) {
-        console.error("Failed to generate the button", err)
+        console.error("Failed to generate the button", err);
         res.sendStatus(404);
     }
 });
@@ -244,6 +244,21 @@ app.use(
         maxAge: "1y",
     }),
 );
+
+/**
+ * Route that we can call to check that the database is correctly configured.
+ */
+app.use("/db_check", async (req, res, next) => {
+    try {
+        // check that the table exists
+        await pool.query("SELECT id FROM users_settings LIMIT 1");
+        await pool.query("SELECT id FROM email_logs LIMIT 1");
+        res.json("ok");
+    } catch (e) {
+        console.error(e);
+        res.json("ko");
+    }
+});
 
 const server = app.listen(5000, () => {
     const address = server.address();

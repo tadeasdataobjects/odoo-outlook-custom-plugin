@@ -49,6 +49,21 @@ cron.schedule("0 0 * * *", async () => {
 app.post(
     "/on_open_email",
     asyncHandler(async (req, res) => {
+        const scopes = req.body.authorizationEventObject?.authorizedScopes || [];
+        const expected = [
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/gmail.addons.execute",
+            "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+        ];
+
+        if (expected.some((scope) => !scopes.includes(scope))) {
+            console.error("User scopes:", scopes);
+            res.send({
+                requesting_google_scopes: { all_scopes: true },
+            });
+            return;
+        }
+
         const [user, headers] = await Promise.all([
             User.getUserFromGoogleToken(req.body),
             Email.getEmailHeadersFromGoogleToken(req.body),

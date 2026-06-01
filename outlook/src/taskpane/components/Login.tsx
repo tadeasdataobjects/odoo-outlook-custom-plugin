@@ -84,12 +84,9 @@ const Login: React.FC<{
             return
         }
 
-        if (version !== 2) {
-            showError(
-                'This addin version required Odoo 19.2 or a newer version, please install an older addin version.'
-            )
-            return
-        }
+   if (version !== 2) {
+       console.warn('Unsupported Odoo mail plugin API version:', version)
+   }
 
         const authCode = await openOdooLoginDialog(url)
         if (!authCode) {

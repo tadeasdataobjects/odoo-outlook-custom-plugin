@@ -12,6 +12,7 @@ export interface LogEmailProps {
     email: Email
     logEmailTitle: string
     logEmailAlreadyLogged: string
+    partnerIdToFollow?: number
 }
 
 const useStyles = makeStyles({
@@ -21,25 +22,37 @@ const useStyles = makeStyles({
 })
 
 const LogEmail: React.FC<LogEmailProps> = (props: LogEmailProps) => {
-    const { recordId, model, email, logEmailTitle, logEmailAlreadyLogged } =
-        props
+    const {
+        recordId,
+        model,
+        email,
+        logEmailTitle,
+        logEmailAlreadyLogged,
+        partnerIdToFollow,
+    } = props
+
     const showError = useContext(ErrorContext)?.showError
     const styles = useStyles()
 
     const [isEmailLogged, setIsEmailLogged] = React.useState(() =>
         getLoggedState(recordId, model, email)
     )
-    const [isLogging, setIsLogging] = React.useState(() => false)
+    const [isLogging, setIsLogging] = React.useState(false)
 
     const onLogEmail = async () => {
         setIsLogging(true)
-        const error = await logEmail(recordId, model, email)
+
+     
+
+        const error = await logEmail(recordId, model, email, partnerIdToFollow)
+
         setIsLogging(false)
 
         if (error.code) {
             showError(error.message)
             return
         }
+
         setIsEmailLogged(true)
     }
 

@@ -4,19 +4,50 @@ import API from './api'
 import { postJsonRpc } from './http'
 import { _t } from './translate'
 
+function escapeHtml(value: string): string {
+    return (value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
+
 /**
  * Format the email body before sending it to Odoo.
- * Add error message at the end of the email, fix some CSS issues,...
  */
 async function _formatEmailBody(email: Email, error: boolean): Promise<string> {
-    let body = await email.getBody()
+    const body = await email.getBody()
 
-    if (error) {
-        body += `<br/><i>${_t(
-            'Attachments could not be logged in Odoo because their total size exceeded the allowed maximum.'
-        )}</i>`
-    }
-    return body
+    const cc = email.emailCC
+        ? `<div><strong>Cc:</strong> ${escapeHtml(email.emailCC)}</div>`
+        : ''
+
+    const warning = error
+        ? `<div style="margin-top: 12px; color: #875A7B;">
+                <em>${escapeHtml(
+                    _t(
+                        'Attachments could not be logged in Odoo because their total size exceeded the allowed maximum.'
+                    )
+                )}</em>
+           </div>`
+        : ''
+
+    return `
+        <div class="o_mail_plugin_logged_email">
+            <div style="font-size: 13px; color: #666; margin-bottom: 10px; line-height: 1.45;">
+                <div><strong>From:</strong> ${escapeHtml(email.emailFrom)}</div>
+                <div><strong>To:</strong> ${escapeHtml(email.emailTo)}</div>
+                ${cc}
+                <div><strong>Subject:</strong> ${escapeHtml(email.subject)}</div>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #ddd; margin: 8px 0 12px 0;" />
+            <div class="o_mail_plugin_logged_email_body">
+                ${body}
+            </div>
+            ${warning}
+        </div>
+    `
 }
 
 /**
@@ -25,10 +56,14 @@ async function _formatEmailBody(email: Email, error: boolean): Promise<string> {
 export async function logEmail(
     recordId: number,
     recordModel: string,
-    email: Email
+    email: Email,
+    partnerIdToFollow?: number
 ): Promise<ErrorMessage> {
     const attachments = await email.getAttachments()
     const body = await _formatEmailBody(email, attachments === null)
+
+
+
     const response = await postJsonRpc(API.LOG_EMAIL, {
         body,
         subject: email.subject,
@@ -40,13 +75,17 @@ export async function logEmail(
         model: recordModel,
         attachments: attachments,
         application_name: _t('Odoo for Outlook'),
+        partner_id_to_follow: partnerIdToFollow,
     })
+
     const error = new ErrorMessage()
+
     if (!response) {
         error.setError('unknown')
     } else {
         setLoggedState(recordId, recordModel, email)
     }
+
     return error
 }
 
@@ -60,18 +99,19 @@ function setLoggedState(recordId: number, recordModel: string, email: Email) {
     )
     const key = `${baseUrl}-${recordId}-${recordModel}-${email.messageId}`
     loggedState.push(key)
+
     if (loggedState.length > 5000) {
-        // LRU cache, keep only the X last elements
         loggedState = loggedState.slice(
             loggedState.length - 5000,
             loggedState.length
         )
     }
+
     localStorage.setItem('logged_state', JSON.stringify(loggedState))
 }
 
 /**
- * Return true if the current email has been logged on the giver record.
+ * Return true if the current email has been logged on the given record.
  */
 export function getLoggedState(
     recordId: number,

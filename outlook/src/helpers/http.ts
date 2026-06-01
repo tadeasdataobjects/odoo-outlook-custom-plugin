@@ -141,6 +141,10 @@ export async function getSupportedAddinVersion(
 export async function openOdooLoginDialog(baseURL: string): Promise<string> {
     const href = window.location.href
     const addInBaseURL = href.substring(0, href.lastIndexOf('/'))
+
+    console.log('openOdooLoginDialog href', href)
+    console.log('openOdooLoginDialog addInBaseURL', addInBaseURL)
+
     const options = {
         height: 65,
         width: 30,
@@ -150,6 +154,9 @@ export async function openOdooLoginDialog(baseURL: string): Promise<string> {
     const redirectToAddin = encodeURIComponent(
         addInBaseURL + '/login_success.html'
     )
+
+    console.log('redirectToAddin', redirectToAddin)
+
     const redirectToAuthPage = encodeURIComponent(
         api.AUTH_CODE_PAGE +
             '?scope=' +
@@ -159,21 +166,34 @@ export async function openOdooLoginDialog(baseURL: string): Promise<string> {
             '&redirect=' +
             redirectToAddin
     )
+
     const loginURL =
         baseURL + api.LOGIN_PAGE + '?redirect=' + redirectToAuthPage
+
     const url = `${addInBaseURL}/login_redirect.html?dialogredir=${loginURL}`
+
+    console.log('login dialog url', url)
 
     return new Promise((resolve, _) => {
         Office.context.ui.displayDialogAsync(url, options, (asyncResult) => {
+            console.log('displayDialogAsync result', asyncResult)
+
             const dialog = asyncResult.value
+
             dialog.addEventHandler(
                 Office.EventType.DialogMessageReceived,
                 (argsStr) => {
+                    console.log('DialogMessageReceived raw', argsStr)
+
                     if ('error' in argsStr) {
+                        console.error('Dialog returned error', argsStr)
                         resolve(null)
                         return
                     }
+
                     const args = JSON.parse(argsStr.message || '')
+                    console.log('DialogMessageReceived parsed', args)
+
                     if (args.success) {
                         const authCode = args.auth_code
                         resolve(authCode?.length ? authCode : null)

@@ -19,12 +19,14 @@ export interface SearchRecordsProps<T extends OdooRecordType> {
     iconAttribute?: keyof Omit<T, 'id'>
     onClick: Function
     search: Function
-    loading?: boolean // can be used if we need an initial search
+    loading?: boolean
+
     // Log email
     email?: Email
     logEmail?: boolean
     logEmailTitle?: string
     logEmailAlreadyLogged?: string
+    partnerIdToFollow?: number
 }
 
 const useStyles = makeStyles({
@@ -69,7 +71,9 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
         logEmailTitle,
         logEmailAlreadyLogged,
         loading: _loading,
+        partnerIdToFollow,
     } = props
+
     const styles = useStyles()
 
     const [records, setRecords] = React.useState(_records)
@@ -90,9 +94,9 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
         }
     }
 
-    const items = records.map((record, _index) => (
+    const items = records.map((record, index) => (
         <RecordCard
-            key={`${record.id}-${model}-${(record as Partner)?.email}-${record.name}`}
+            key={`${record.id || index}-${model}-${(record as Partner)?.email || ''}-${record.name}`}
             model={model}
             onClick={onClick}
             record={record}
@@ -103,6 +107,7 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
             logEmail={logEmail}
             logEmailTitle={logEmailTitle}
             logEmailAlreadyLogged={logEmailAlreadyLogged}
+            partnerIdToFollow={partnerIdToFollow}
         />
     ))
 

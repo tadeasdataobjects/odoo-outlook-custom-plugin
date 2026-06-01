@@ -1,4 +1,4 @@
-import { ErrorMessage } from '../models/error_message'
+ import { ErrorMessage } from '../models/error_message'
 import API from './api'
 import { postJsonRpc } from './http'
 

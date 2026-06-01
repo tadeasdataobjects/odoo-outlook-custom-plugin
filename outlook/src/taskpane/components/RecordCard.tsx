@@ -11,11 +11,13 @@ export interface RecordCardProps {
     description: string | React.JSX.Element | React.JSX.Element[]
     icon?: string
     onClick?: Function
+
     // Log email
     email?: Email
     logEmail?: boolean
     logEmailTitle?: string
     logEmailAlreadyLogged?: string
+    partnerIdToFollow?: number
 }
 
 const useStyles = makeStyles({
@@ -43,7 +45,7 @@ const useStyles = makeStyles({
         },
     },
     recordInfo: {
-        width: '100%;',
+        width: '100%',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -87,14 +89,16 @@ const RecordCard: React.FC<RecordCardProps> = (props: RecordCardProps) => {
         logEmailTitle,
         logEmailAlreadyLogged,
         email,
+        partnerIdToFollow,
     } = props
+
     const styles = useStyles()
 
     return (
         <div className={styles.container}>
             <div
-                className={styles.record + (onClick && ' clickable')}
-                onClick={onClick && (() => onClick(record))}
+                className={styles.record + (onClick ? ' clickable' : '')}
+                onClick={onClick ? () => onClick(record) : undefined}
             >
                 {!!icon && <img className={styles.icon} src={icon} />}
                 <div className={styles.recordInfo}>
@@ -114,13 +118,15 @@ const RecordCard: React.FC<RecordCardProps> = (props: RecordCardProps) => {
                     </div>
                 </div>
             </div>
-            {logEmail && (
+
+            {logEmail && email && (
                 <LogEmail
                     recordId={record.id}
                     model={model}
                     email={email}
-                    logEmailTitle={logEmailTitle}
-                    logEmailAlreadyLogged={logEmailAlreadyLogged}
+                    logEmailTitle={logEmailTitle || ''}
+                    logEmailAlreadyLogged={logEmailAlreadyLogged || ''}
+                    partnerIdToFollow={partnerIdToFollow}
                 />
             )}
         </div>

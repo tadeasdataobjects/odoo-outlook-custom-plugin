@@ -70,10 +70,12 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
         showGlobalLoading()
         const newPartner = await Partner.savePartner(partner)
         hideGlobalLoading()
+
         if (!newPartner) {
             showError(_t('Can not save the contact'))
             return
         }
+
         updatePartner(newPartner)
     }
 
@@ -82,6 +84,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
     }
 
     let description = []
+
     if (partner.parentName) {
         description.push(
             <span
@@ -93,6 +96,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
             </span>
         )
     }
+
     if (partner.email) {
         description.push(
             <span
@@ -104,6 +108,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
             </span>
         )
     }
+
     if (partner.phone) {
         description.push(
             <span
@@ -118,10 +123,12 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
 
     const onCreateLead = async () => {
         const result = await Lead.createLead(partner, email)
+
         if (!result) {
             showError(_t('Could not create the opportunity'))
             return
         }
+
         const [record, newPartner] = result
         newPartner.leads.push(record)
         newPartner.leadCount += 1
@@ -132,16 +139,20 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
         const onOpenLead = (lead: Lead) => {
             window.open(getOdooRecordURL('crm.lead', lead.id))
         }
+
         const searchLeads = async (query: string) => {
             const [records, _totalCount, error] = await searchRecords(
                 'crm.lead',
                 query
             )
+
             if (error.code) {
                 return showError(error.message)
             }
+
             return records.map(Lead.fromOdooResponse)
         }
+
         pushPage(
             <SearchRecords
                 onClick={onOpenLead}
@@ -157,16 +168,19 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                 logEmailAlreadyLogged={_t(
                     'Email already logged on the opportunity'
                 )}
+                partnerIdToFollow={partner.id}
             />
         )
     }
 
     const onCreateTicket = async () => {
         const result = await Ticket.createTicket(partner, email)
+
         if (!result) {
             showError(_t('Could not create the ticket'))
             return
         }
+
         const [record, newPartner] = result
         newPartner.tickets.push(record)
         newPartner.ticketCount += 1
@@ -177,16 +191,20 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
         const onOpenTicket = (ticket: Ticket) => {
             window.open(getOdooRecordURL('helpdesk.ticket', ticket.id))
         }
+
         const searchTickets = async (query: string) => {
             const [records, _totalCount, error] = await searchRecords(
                 'helpdesk.ticket',
                 query
             )
+
             if (error.code) {
                 return showError(error.message)
             }
+
             return records.map(Ticket.fromOdooResponse)
         }
+
         pushPage(
             <SearchRecords
                 onClick={onOpenTicket}
@@ -200,6 +218,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                 logEmail={true}
                 logEmailTitle={_t('Log the email on the ticket')}
                 logEmailAlreadyLogged={_t('Email already logged on the ticket')}
+                partnerIdToFollow={partner.id}
             />
         )
     }
@@ -212,16 +231,19 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
             showGlobalLoading()
             const result = await Task.createTask(partner, project.id, email)
             hideGlobalLoading()
+
             if (!result) {
                 showError(_t('Could not create the task'))
                 return
             }
+
             const [record, newPartner] = result
             newPartner.tasks.push(record)
             newPartner.taskCount += 1
             goBack(backCount)
             updatePartner(newPartner)
         }
+
         pushPage(
             <SelectProject
                 canCreateProject={partner.canCreateProject}
@@ -235,16 +257,20 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
         const onOpenTask = (task: Task) => {
             window.open(getOdooRecordURL('project.task', task.id))
         }
+
         const searchTasks = async (query: string) => {
             const [records, _totalCount, error] = await searchRecords(
                 'project.task',
                 query
             )
+
             if (error.code) {
                 return showError(error.message)
             }
+
             return records.map(Task.fromOdooResponse)
         }
+
         pushPage(
             <SearchRecords
                 onClick={onOpenTask}
@@ -258,6 +284,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                 logEmail={true}
                 logEmailTitle={_t('Log the email on the task')}
                 logEmailAlreadyLogged={_t('Email already logged on the task')}
+                partnerIdToFollow={partner.id}
             />
         )
     }
@@ -303,6 +330,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                         logEmailAlreadyLogged={_t(
                             'Email already logged on the contact'
                         )}
+                        partnerIdToFollow={partner.id}
                     />
                 )}
                 <Button
@@ -314,6 +342,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                     onClick={() => onSearch()}
                 />
             </div>
+
             {!!partner.leads && (
                 <RecordsSection
                     email={email}
@@ -333,8 +362,10 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                     recordCount={partner.leadCount}
                     createRecord={onCreateLead}
                     onSearch={onSearchLead}
+                    partnerIdToFollow={partner.id}
                 />
             )}
+
             {!!partner.tickets && (
                 <RecordsSection
                     email={email}
@@ -354,8 +385,10 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                     recordCount={partner.ticketCount}
                     createRecord={onCreateTicket}
                     onSearch={onSearchTicket}
+                    partnerIdToFollow={partner.id}
                 />
             )}
+
             {!!partner.tasks && (
                 <RecordsSection
                     email={email}
@@ -375,6 +408,7 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
                     recordCount={partner.taskCount}
                     createRecord={onCreateTask}
                     onSearch={onSearchTask}
+                    partnerIdToFollow={partner.id}
                 />
             )}
         </div>

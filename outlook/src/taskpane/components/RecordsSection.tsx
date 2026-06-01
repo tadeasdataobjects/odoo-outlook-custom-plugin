@@ -19,6 +19,7 @@ export interface RecordsSectionProps<T extends OdooRecordType> {
     createRecord: Function
     onSearch: Function
     descriptionAttribute: keyof Omit<T, 'id'>
+    partnerIdToFollow?: number
 }
 
 const useStyles = makeStyles({
@@ -73,6 +74,7 @@ function RecordsSection<T extends OdooRecordType>(
         createRecord,
         onSearch,
         descriptionAttribute,
+        partnerIdToFollow,
     } = props
 
     const [showAll, setShowAll] = React.useState(false)
@@ -85,9 +87,9 @@ function RecordsSection<T extends OdooRecordType>(
         window.open(getOdooRecordURL(model, record.id))
     }
 
-    const items = _records.map((record, _index) => (
+    const items = _records.map((record, index) => (
         <RecordCard
-            key={`${record.id}-${model}`}
+            key={`${record.id || index}-${model}`}
             model={model}
             onClick={() => onOpen(record)}
             record={record}
@@ -97,6 +99,7 @@ function RecordsSection<T extends OdooRecordType>(
             logEmailTitle={logEmailTitle}
             logEmailAlreadyLogged={logEmailAlreadyLogged}
             email={email}
+            partnerIdToFollow={partnerIdToFollow}
         />
     ))
 

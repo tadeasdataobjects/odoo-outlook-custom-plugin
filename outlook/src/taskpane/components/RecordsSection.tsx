@@ -20,23 +20,34 @@ export interface RecordsSectionProps<T extends OdooRecordType> {
     onSearch: Function
     descriptionAttribute: keyof Omit<T, 'id'>
     partnerIdToFollow?: number
+
+    /**
+     * When false, the section behaves like the original compact UI:
+     * it only shows the section title, create button and search button.
+     */
+    showRecords?: boolean
 }
 
 const useStyles = makeStyles({
     section: {
         marginTop: '10px',
+        borderTop: '1px solid #eee',
+        paddingTop: '8px',
     },
     header: {
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        minHeight: '36px',
     },
     title: {
         margin: '5px',
+        fontWeight: 600,
     },
     buttons: {
         display: 'flex',
+        alignItems: 'center',
     },
     button: {
         marginLeft: '5px',
@@ -75,13 +86,13 @@ function RecordsSection<T extends OdooRecordType>(
         onSearch,
         descriptionAttribute,
         partnerIdToFollow,
+        showRecords = true,
     } = props
 
     const [showAll, setShowAll] = React.useState(false)
+    const [isCreating, setIsCreating] = React.useState(false)
 
     const _records = showAll ? records : [...records].splice(0, 5)
-
-    const [isCreating, setIsCreating] = React.useState(false)
 
     const onOpen = (record: OdooRecordType) => {
         window.open(getOdooRecordURL(model, record.id))
@@ -113,6 +124,7 @@ function RecordsSection<T extends OdooRecordType>(
         <section className={styles.section}>
             <div className={styles.header}>
                 <h4 className={styles.title}>{sectionTitle}</h4>
+
                 <div className={styles.buttons}>
                     {isCreating ? (
                         <Image
@@ -132,6 +144,7 @@ function RecordsSection<T extends OdooRecordType>(
                             onClick={onCreate}
                         />
                     )}
+
                     <Button
                         className={styles.button}
                         icon={<SearchRegular />}
@@ -143,20 +156,23 @@ function RecordsSection<T extends OdooRecordType>(
                     />
                 </div>
             </div>
-            <div className={styles.recordsContainer}>
-                {items}
-                {_records.length < recordCount && (
-                    <Button
-                        className={styles.showAll}
-                        appearance="subtle"
-                        onClick={() => {
-                            setShowAll(true)
-                        }}
-                    >
-                        {_t('Show all')}
-                    </Button>
-                )}
-            </div>
+
+            {showRecords && (
+                <div className={styles.recordsContainer}>
+                    {items}
+                    {_records.length < recordCount && (
+                        <Button
+                            className={styles.showAll}
+                            appearance="subtle"
+                            onClick={() => {
+                                setShowAll(true)
+                            }}
+                        >
+                            {_t('Show all')}
+                        </Button>
+                    )}
+                </div>
+            )}
         </section>
     )
 }

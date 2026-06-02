@@ -1,71 +1,71 @@
-import { URLS } from "../consts";
-import { postJsonRpc } from "../utils/http";
-import { Email } from "./email";
-import { Partner } from "./partner";
-import { User } from "./user";
+import API from '../helpers/api'
+import { postJsonRpc } from '../helpers/http'
+import { Email } from './email'
+import { OdooRecord } from './odoo'
+import { Partner } from './partner'
 
 /**
  * Represent a "crm.lead" record.
  */
-export class Lead {
-    id: number;
-    name: string;
-    revenuesDescription: string;
+export class Lead extends OdooRecord {
+    revenuesDescription: string
 
     /**
-     * Make a RPC call to the Odoo database to create a lead
-     * and return the ID of the newly created record.
+     * Make a RPC call to the Odoo database to create a lead.
+     *
+     * Supports both payloads:
+     * - newer custom payload: { id: ... }
+     * - Odoo 18 payload: { lead_id: ... }
      */
     static async createLead(
-        user: User,
         partner: Partner,
-        email: Email,
+        email: Email
     ): Promise<[Lead, Partner] | null> {
-        const [body, _, attachmentsParsed] = await email.getBodyAndAttachments();
+        const response = await postJsonRpc(API.CREATE_LEAD, {
+            email_body: await email.getBody(),
+            email_subject: email.subject,
+            attachments: await email.getAttachments(),
+            partner_id: partner.id,
+            partner_email: partner.email,
+            partner_name: partner.name,
+        })
 
-        const response = await postJsonRpc(
-            user.odooUrl + URLS.CREATE_LEAD,
-            {
-                email_body: body,
-                email_subject: email.subject,
-                partner_id: partner.id,
-                partner_email: partner.email,
-                partner_name: partner.name,
-                attachments: attachmentsParsed[0],
-            },
-            { Authorization: "Bearer " + user.odooToken },
-        );
+        const leadId = response?.id || response?.lead_id
 
-        if (!response?.id) {
-            return null;
+        if (!leadId) {
+            return null
         }
-        if (!partner.id) {
-            partner.id = response.partner_id;
-            partner.image = response.partner_image;
-            partner.isWritable = true;
-        }
-        return [Lead.fromOdooResponse(response), partner];
-    }
 
-    /**
-     * Unserialize the lead object (reverse JSON.stringify).
-     */
-    static fromJson(values: any): Lead {
-        const lead = new Lead();
-        lead.id = values.id;
-        lead.name = values.name;
-        lead.revenuesDescription = values.revenuesDescription;
-        return lead;
+        const newPartner = partner.clone()
+
+        if (!partner.id && response.partner_id) {
+            newPartner.id = response.partner_id
+            newPartner.image = response.partner_image
+            newPartner.isWritable = true
+        }
+
+        return [
+            Lead.fromOdooResponse({
+                ...response,
+                id: leadId,
+                lead_id: leadId,
+                name: response.name || email.subject || 'New opportunity',
+            }),
+            newPartner,
+        ]
     }
 
     /**
      * Parse the dictionary returned by the Odoo database endpoint.
      */
-    static fromOdooResponse(values: any): Lead {
-        const lead = new Lead();
-        lead.id = values.id;
-        lead.name = values.name;
-        lead.revenuesDescription = values.revenues_description;
-        return lead;
+    static fromOdooResponse(values: Record<string, any>): Lead {
+        const lead = new Lead()
+        lead.id = values.id || values.lead_id
+        lead.name = values.name
+        lead.revenuesDescription =
+            values.revenues_description ||
+            values.revenuesDescription ||
+            ''
+        return lead
     }
 }

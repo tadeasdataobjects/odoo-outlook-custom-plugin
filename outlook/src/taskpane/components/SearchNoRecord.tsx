@@ -86,24 +86,24 @@ const SearchNoRecord: React.FC<SearchNoRecordProps> = (
             <text
                 x="32"
                 y="75"
-                font-size="8"
+                fontSize="8"
                 className={styles.text}
-                text-anchor="middle"
-                font-family="Caveat"
-                font-style="normal"
-                font-weight="400"
+                textAnchor="middle"
+                fontFamily="Caveat"
+                fontStyle="normal"
+                fontWeight="400"
             >
                 {_t('No record found.')}
             </text>
             <text
                 x="32"
                 y="85"
-                font-size="8"
+                fontSize="8"
                 className={styles.text}
-                text-anchor="middle"
-                font-family="Caveat"
-                font-style="normal"
-                font-weight="400"
+                textAnchor="middle"
+                fontFamily="Caveat"
+                fontStyle="normal"
+                fontWeight="400"
             >
                 {_t('Try using different keywords.')}
             </text>

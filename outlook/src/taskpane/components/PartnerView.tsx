@@ -349,6 +349,11 @@ const onSearchTask = async () => {
     }
 
     const onOpenTask = (task: Task) => {
+        if (!task.id) {
+            displayError(_t('Could not open the task. Missing task id.'))
+            return
+        }
+
         window.open(getOdooRecordURL('project.task', task.id))
     }
 

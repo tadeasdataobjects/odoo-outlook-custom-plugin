@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import App from './components/App'
 import { ErrorProvider } from './components/Error'
 
-/* global document, Office, module, require, HTMLElement */
+/* global document, Office, module, HTMLElement */
 
 const rootElement: HTMLElement | null = document.getElementById('container')
 const root = rootElement ? createRoot(rootElement) : undefined
@@ -39,15 +39,21 @@ function render() {
     )
 }
 
+function registerMailboxEvents() {
+    const mailbox = Office?.context?.mailbox
+
+    if (!mailbox) {
+        return
+    }
+
+    mailbox.addHandlerAsync(Office.EventType.ItemChanged, () => {
+        window.dispatchEvent(new CustomEvent('newEmailOpened'))
+    })
+}
+
 /* Render application after Office initializes */
 Office.onReady(() => {
-    Office.context.mailbox.addHandlerAsync(
-        /* On desktop, when we open a new email while keeping the addin open. */
-        Office.EventType.ItemChanged,
-        () => {
-            window.dispatchEvent(new CustomEvent('newEmailOpened'))
-        }
-    )
+    registerMailboxEvents()
     render()
 })
 

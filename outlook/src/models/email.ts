@@ -160,8 +160,23 @@ export class Email {
     contacts: EmailContact[]
 
     constructor() {
-        const userEmail = Office.context.mailbox.userProfile.emailAddress
-        const mail = Office.context.mailbox.item
+        const mailbox = Office?.context?.mailbox
+        const mail = mailbox?.item
+
+        if (!mailbox || !mail) {
+            this.subject = ''
+            this.timestamp = Date.now()
+            this.messageId = ''
+
+            this.emailFrom = ''
+            this.emailTo = ''
+            this.emailCC = ''
+            this.contacts = []
+
+            return
+        }
+
+        const userEmail = mailbox.userProfile.emailAddress
 
         const values = [
             [mail.from.displayName, mail.from.emailAddress],

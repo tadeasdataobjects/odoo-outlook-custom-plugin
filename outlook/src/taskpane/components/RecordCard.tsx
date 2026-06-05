@@ -11,6 +11,7 @@ export interface RecordCardProps {
     description: string | React.JSX.Element | React.JSX.Element[]
     icon?: string
     onClick?: Function
+    action?: React.JSX.Element
 
     // Log email
     email?: Email
@@ -85,6 +86,7 @@ const RecordCard: React.FC<RecordCardProps> = (props: RecordCardProps) => {
         name,
         onClick,
         record,
+        action,
         logEmail,
         logEmailTitle,
         logEmailAlreadyLogged,
@@ -118,6 +120,8 @@ const RecordCard: React.FC<RecordCardProps> = (props: RecordCardProps) => {
                     </div>
                 </div>
             </div>
+
+            {action}
 
             {logEmail && email && (
                 <LogEmail

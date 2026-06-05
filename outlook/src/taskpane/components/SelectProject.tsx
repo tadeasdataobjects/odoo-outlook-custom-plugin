@@ -1,5 +1,7 @@
-import { Button, makeStyles } from '@fluentui/react-components'
+import { Button, Image, makeStyles } from '@fluentui/react-components'
+import { MailCheckmarkRegular, MailRegular } from '@fluentui/react-icons'
 import React, { useContext } from 'react'
+import { getOdooRecordURL } from '../../helpers/http'
 import { _t } from '../../helpers/translate'
 import { Project } from '../../models/project'
 import CreateProject from './CreateProject'
@@ -10,6 +12,11 @@ export interface SelectProjectProps {
     canCreateProject: boolean
     onSelectProject: Function
     pushPage: Function
+}
+
+interface CreateTaskInProjectButtonProps {
+    project: Project
+    onSelectProject: Function
 }
 
 const useStyles = makeStyles({
@@ -32,7 +39,112 @@ const useStyles = makeStyles({
     button: {
         justifyContent: 'flex-start',
     },
+    actionSpinner: {
+        padding: '4px',
+    },
+    loggedContainer: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+    },
+    successMessage: {
+        fontSize: '12px',
+        color: '#107c10',
+        whiteSpace: 'nowrap',
+    },
 })
+
+const CreateTaskInProjectButton: React.FC<CreateTaskInProjectButtonProps> = (
+    props: CreateTaskInProjectButtonProps
+) => {
+    const { project, onSelectProject } = props
+    const styles = useStyles()
+
+    const [isCreating, setIsCreating] = React.useState(false)
+    const [isCreated, setIsCreated] = React.useState(false)
+    const [showSuccessMessage, setShowSuccessMessage] = React.useState(false)
+
+    const successTimeout = React.useRef<number | null>(null)
+
+    React.useEffect(() => {
+        return () => {
+            if (successTimeout.current !== null) {
+                window.clearTimeout(successTimeout.current)
+            }
+        }
+    }, [])
+
+    const showSuccess = () => {
+        setShowSuccessMessage(true)
+
+        if (successTimeout.current !== null) {
+            window.clearTimeout(successTimeout.current)
+        }
+
+        successTimeout.current = window.setTimeout(() => {
+            setShowSuccessMessage(false)
+        }, 2500)
+    }
+
+    const onCreateTask = async () => {
+        if (!project.id || isCreating || isCreated) {
+            return
+        }
+
+        setIsCreating(true)
+
+        try {
+            await onSelectProject(project, 0, false)
+            setIsCreated(true)
+            showSuccess()
+        } finally {
+            setIsCreating(false)
+        }
+    }
+
+    if (isCreating) {
+        return (
+            <Image
+                className={styles.actionSpinner}
+                width="24px"
+                src="assets/spinner.gif"
+                alt={_t('Loading')}
+            />
+        )
+    }
+
+    if (isCreated) {
+        return (
+            <span className={styles.loggedContainer}>
+                <Button
+                    icon={<MailCheckmarkRegular />}
+                    title={_t('Task created from this email')}
+                    size="small"
+                    shape="circular"
+                    appearance="subtle"
+                    disabled={true}
+                />
+
+                {showSuccessMessage && (
+                    <span className={styles.successMessage}>
+                        {_t('Task created')}
+                    </span>
+                )}
+            </span>
+        )
+    }
+
+    return (
+        <Button
+            icon={<MailRegular />}
+            title={_t('Create task from this email in this project')}
+            size="small"
+            shape="circular"
+            appearance="subtle"
+            onClick={onCreateTask}
+        />
+    )
+}
 
 const SelectProject: React.FC<SelectProjectProps> = (
     props: SelectProjectProps
@@ -51,17 +163,34 @@ const SelectProject: React.FC<SelectProjectProps> = (
         const [result, error] = await Project.searchProject(trimmedQuery)
 
         if (error.code) {
-            showError(error.message)
+            showError?.(error.message)
             return []
         }
 
         return result
     }
 
+    const onOpenProject = (project: Project) => {
+        if (!project.id) {
+            return
+        }
+
+        window.open(getOdooRecordURL('project.project', project.id))
+    }
+
+    const renderCreateTaskAction = (project: Project) => {
+        return (
+            <CreateTaskInProjectButton
+                project={project}
+                onSelectProject={onSelectProject}
+            />
+        )
+    }
+
     const onShowExistingProjectSearch = () => {
         pushPage(
             <SearchRecords<Project>
-                onClick={onSelectProject}
+                onClick={onOpenProject}
                 search={searchProject}
                 model="project.project"
                 searchPlaceholder={_t('Search a Project')}
@@ -72,24 +201,25 @@ const SelectProject: React.FC<SelectProjectProps> = (
                 bottom={
                     <span className={styles.description}>
                         {_t(
-                            'Search for a project, then select it to create the task there.'
+                            'Search for a project, then click the envelope to create a task from this email in that project.'
                         )}
                     </span>
                 }
+                recordAction={renderCreateTaskAction}
             />
         )
     }
 
     const onShowCreateProjectPage = () => {
         if (!canCreateProject) {
-            showError(_t('You can not create a project.'))
+            showError?.(_t('You can not create a project.'))
             return
         }
 
         pushPage(
             <CreateProject
                 onCreate={(project: Project) => {
-                    onSelectProject(project, 2)
+                    onSelectProject(project, 2, true)
                 }}
             />
         )

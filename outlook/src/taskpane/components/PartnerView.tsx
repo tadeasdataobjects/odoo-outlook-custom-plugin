@@ -354,40 +354,52 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
             return
         }
 
-       const onSelectProject = async (
-           project: Project,
-           backCount: number = 1
-       ) => {
-           showGlobalLoading()
+ const onSelectProject = async (
+     project: Project,
+     backCount: number = 1,
+     openTask: boolean = true
+ ) => {
+     showGlobalLoading()
 
-           try {
-               const result = await Task.createTask(partner, project.id, email)
+     try {
+         const result = await Task.createTask(partner, project.id, email)
 
-               if (!result) {
-                   displayError(_t('Could not create the task'))
-                   return
-               }
+         if (!result) {
+             displayError(_t('Could not create the task'))
+             return
+         }
 
-               const [record, newPartner] = result
+         const [record, newPartner] = result
 
-               newPartner.tasks = newPartner.tasks || []
-               newPartner.taskCount = newPartner.taskCount || 0
+         newPartner.tasks = newPartner.tasks || []
+         newPartner.taskCount = newPartner.taskCount || 0
 
-               newPartner.tasks.push(record)
-               newPartner.taskCount += 1
+         newPartner.tasks.push(record)
+         newPartner.taskCount += 1
 
-               goBack(backCount)
-               updatePartner(newPartner)
-               showSuccess(_t('Task created'))
+         if (openTask) {
+             if (backCount > 0) {
+                 goBack(backCount)
+             }
 
-               window.open(getOdooRecordURL('project.task', record.id))
-           } catch (error) {
-               console.error('Could not create task', error)
-               displayError(_t('Could not create the task'))
-           } finally {
-               hideGlobalLoading()
-           }
-       }
+             updatePartner(newPartner)
+             showSuccess(_t('Task created'))
+
+             window.open(getOdooRecordURL('project.task', record.id))
+             return
+         }
+
+         // Existing project flow:
+         // stay on the project search page and let SelectProject grey/check the envelope.
+         // Do not call updatePartner here, because updatePartner switches current page
+         // back to PartnerView.
+     } catch (error) {
+         console.error('Could not create task', error)
+         displayError(_t('Could not create the task'))
+     } finally {
+         hideGlobalLoading()
+     }
+ }
 
         pushPage(
             <SelectProject

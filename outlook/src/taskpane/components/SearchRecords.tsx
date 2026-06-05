@@ -20,6 +20,7 @@ export interface SearchRecordsProps<T extends OdooRecordType> {
     onClick: Function
     search: Function
     loading?: boolean
+    recordAction?: (record: T) => React.JSX.Element
 
     // Log email
     email?: Email
@@ -80,6 +81,7 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
         logEmailTitle,
         logEmailAlreadyLogged,
         loading: _loading,
+        recordAction,
         partnerIdToFollow,
     } = props
 
@@ -168,6 +170,7 @@ React.useEffect((): (() => void) | undefined => {
             record={record}
             description={record[descriptionAttribute] as string}
             icon={iconAttribute ? (record[iconAttribute] as string) : undefined}
+            action={recordAction ? recordAction(record) : undefined}
             name={record[nameAttribute] as string}
             email={email}
             logEmail={logEmail}

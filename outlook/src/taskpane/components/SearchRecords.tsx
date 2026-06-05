@@ -29,6 +29,9 @@ export interface SearchRecordsProps<T extends OdooRecordType> {
     partnerIdToFollow?: number
 }
 
+const MIN_SEARCH_LENGTH = 2
+const SEARCH_DEBOUNCE_MS = 400
+
 const useStyles = makeStyles({
     container: {
         display: 'flex',
@@ -51,6 +54,12 @@ const useStyles = makeStyles({
     },
     spinner: {
         padding: '8px',
+    },
+    helperText: {
+        marginTop: '4px',
+        marginBottom: '8px',
+        fontSize: '12px',
+        color: '#666',
     },
 })
 
@@ -76,16 +85,71 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
 
     const styles = useStyles()
 
-    const [records, setRecords] = React.useState(_records)
+    const [records, setRecords] = React.useState<T[]>(_records || [])
     const [query, setQuery] = React.useState('')
-    const [loading, setLoading] = React.useState(_loading)
+    const [loading, setLoading] = React.useState(Boolean(_loading))
     const [initSearch, setInitSearch] = React.useState(true)
 
-    const onSearch = async () => {
+    const lastSearchId = React.useRef(0)
+
+    React.useEffect(() => {
+        setRecords(_records || [])
+    }, [_records])
+
+    const runSearch = async (searchQuery: string, force = false) => {
+        const trimmedQuery = searchQuery.trim()
+
+        if (!force && trimmedQuery.length < MIN_SEARCH_LENGTH) {
+            setRecords(_records || [])
+            setInitSearch(true)
+            setLoading(false)
+            return
+        }
+
+        const searchId = lastSearchId.current + 1
+        lastSearchId.current = searchId
+
         setLoading(true)
-        setRecords((await search(query)) || [])
+
+        const result = (await search(trimmedQuery)) || []
+
+        if (searchId !== lastSearchId.current) {
+            return
+        }
+
+        setRecords(result)
         setLoading(false)
         setInitSearch(false)
+    }
+
+React.useEffect((): (() => void) | undefined => {
+    const trimmedQuery = query.trim()
+
+    if (!trimmedQuery.length) {
+        lastSearchId.current += 1
+        setRecords(_records || [])
+        setInitSearch(true)
+        setLoading(false)
+        return undefined
+    }
+
+    if (trimmedQuery.length < MIN_SEARCH_LENGTH) {
+        lastSearchId.current += 1
+        setRecords(_records || [])
+        setInitSearch(true)
+        setLoading(false)
+        return undefined
+    }
+
+    const timeout = window.setTimeout(() => {
+        runSearch(trimmedQuery)
+    }, SEARCH_DEBOUNCE_MS)
+
+    return () => window.clearTimeout(timeout)
+}, [query])
+
+    const onSearch = async () => {
+        await runSearch(query, true)
     }
 
     const onKeyUp = (event: React.KeyboardEvent) => {
@@ -96,12 +160,14 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
 
     const items = records.map((record, index) => (
         <RecordCard
-            key={`${record.id || index}-${model}-${(record as Partner)?.email || ''}-${record.name}`}
+            key={`${record.id || index}-${model}-${
+                (record as Partner)?.email || ''
+            }-${record.name}`}
             model={model}
             onClick={onClick}
             record={record}
             description={record[descriptionAttribute] as string}
-            icon={record[iconAttribute] as string}
+            icon={iconAttribute ? (record[iconAttribute] as string) : undefined}
             name={record[nameAttribute] as string}
             email={email}
             logEmail={logEmail}
@@ -111,9 +177,13 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
         />
     ))
 
+    const showHelperText =
+        query.trim().length > 0 && query.trim().length < MIN_SEARCH_LENGTH
+
     return (
         <div className={styles.container}>
             {title && <h4 className={styles.title}>{title}</h4>}
+
             <div className={styles.searchContainer}>
                 <Input
                     className={styles.input}
@@ -122,6 +192,7 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyUp={onKeyUp}
                 />
+
                 {loading ? (
                     <Image
                         className={styles.spinner}
@@ -133,7 +204,15 @@ function SearchRecords<T extends OdooRecordType>(props: SearchRecordsProps<T>) {
                     <Button icon={<SearchRegular />} onClick={onSearch} />
                 )}
             </div>
+
+            {showHelperText && (
+                <div className={styles.helperText}>
+                    {_t('Type at least 2 characters to search.')}
+                </div>
+            )}
+
             {initSearch && bottom}
+
             {items.length || initSearch ? (
                 <div>{items}</div>
             ) : (

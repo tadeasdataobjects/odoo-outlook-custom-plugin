@@ -11,7 +11,7 @@ const api = {
     // HELPDESK Ticket
     CREATE_TICKET: '/mail_plugin/ticket/create',
     // Project
-    SEARCH_PROJECT: '/mail_plugin/search_records/project.project',
+    SEARCH_PROJECT: '/mail_plugin/project/search_cors',
     CREATE_PROJECT: '/mail_plugin/project/create',
     CREATE_TASK: '/mail_plugin/task/create',
     // Authentication

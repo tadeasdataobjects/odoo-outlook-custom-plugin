@@ -12,7 +12,27 @@ export interface SelectProjectProps {
     pushPage: Function
 }
 
-const useStyles = makeStyles({})
+const useStyles = makeStyles({
+    container: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        paddingTop: '5px',
+    },
+    title: {
+        marginTop: '5px',
+        marginBottom: '5px',
+    },
+    description: {
+        marginTop: '0',
+        marginBottom: '8px',
+        fontSize: '12px',
+        color: '#666',
+    },
+    button: {
+        justifyContent: 'flex-start',
+    },
+})
 
 const SelectProject: React.FC<SelectProjectProps> = (
     props: SelectProjectProps
@@ -21,47 +41,51 @@ const SelectProject: React.FC<SelectProjectProps> = (
     const showError = useContext(ErrorContext)?.showError
     const styles = useStyles()
 
-    const [loading, setLoading] = React.useState(true)
-    const [noProject, setNoProject] = React.useState(false)
-    const [initProjects, setInitProjects] = React.useState(null)
-
     const searchProject = async (query: string): Promise<Project[]> => {
-        const [result, error] = await Project.searchProject(query)
+        const trimmedQuery = query.trim()
+
+        if (!trimmedQuery) {
+            return []
+        }
+
+        const [result, error] = await Project.searchProject(trimmedQuery)
+
         if (error.code) {
             showError(error.message)
             return []
         }
+
         return result
     }
 
-    const initSearch = async () => {
-        const projects = await searchProject('')
-        setNoProject(!projects.length)
-        setInitProjects(projects)
-        setLoading(false)
-    }
-
-    React.useEffect(() => {
-        initSearch()
-    }, [])
-
-    if (noProject) {
-        if (canCreateProject) {
-            return <CreateProject onCreate={onSelectProject} />
-        }
-        return (
-            <div>
-                <h4>{_t('No project')}</h4>
-                <span>
-                    {_t(
-                        'There are no project in your database. Please ask your project manager to create one.'
-                    )}
-                </span>
-            </div>
+    const onShowExistingProjectSearch = () => {
+        pushPage(
+            <SearchRecords<Project>
+                onClick={onSelectProject}
+                search={searchProject}
+                model="project.project"
+                searchPlaceholder={_t('Search a Project')}
+                records={[]}
+                nameAttribute="name"
+                descriptionAttribute="description"
+                title={_t('Create a Task in an existing Project')}
+                bottom={
+                    <span className={styles.description}>
+                        {_t(
+                            'Search for a project, then select it to create the task there.'
+                        )}
+                    </span>
+                }
+            />
         )
     }
 
-    const onShowCreatePage = () => {
+    const onShowCreateProjectPage = () => {
+        if (!canCreateProject) {
+            showError(_t('You can not create a project.'))
+            return
+        }
+
         pushPage(
             <CreateProject
                 onCreate={(project: Project) => {
@@ -71,24 +95,34 @@ const SelectProject: React.FC<SelectProjectProps> = (
         )
     }
 
-    const createButton = canCreateProject && (
-        <Button onClick={onShowCreatePage}>{_t('Create Project')}</Button>
-    )
-
     return (
-        <SearchRecords<Project>
-            key={loading.toString()}
-            bottom={createButton}
-            loading={loading}
-            onClick={onSelectProject}
-            search={searchProject}
-            model="project.project"
-            searchPlaceholder={_t('Search a Project')}
-            records={initProjects || []}
-            nameAttribute="name"
-            descriptionAttribute="description"
-            title={_t('Create a Task in an existing Project')}
-        />
+        <div className={styles.container}>
+            <h4 className={styles.title}>{_t('Create Task')}</h4>
+
+            <p className={styles.description}>
+                {_t(
+                    'Choose whether you want to create the task in an existing project or create a new project first.'
+                )}
+            </p>
+
+            <Button
+                className={styles.button}
+                appearance="primary"
+                onClick={onShowExistingProjectSearch}
+            >
+                {_t('Create task in existing project')}
+            </Button>
+
+            {canCreateProject && (
+                <Button
+                    className={styles.button}
+                    appearance="secondary"
+                    onClick={onShowCreateProjectPage}
+                >
+                    {_t('Create task in new project')}
+                </Button>
+            )}
+        </div>
     )
 }
 

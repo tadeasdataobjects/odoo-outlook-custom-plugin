@@ -39,12 +39,18 @@ export class Project extends OdooRecord {
     ): Promise<[Project[], ErrorMessage]> {
         const response = await postJsonRpc(API.SEARCH_PROJECT, { query })
 
-        if (!response?.length) {
+        if (!response) {
             return [[], new ErrorMessage('http_error_odoo')]
         }
 
+        const records = Array.isArray(response[0]) ? response[0] : response
+
+        if (!records?.length) {
+            return [[], new ErrorMessage()]
+        }
+
         return [
-            response[0].map((values: Record<string, any>) =>
+            records.map((values: Record<string, any>) =>
                 Project.fromOdooResponse(values)
             ),
             new ErrorMessage(),

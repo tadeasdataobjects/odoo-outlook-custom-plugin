@@ -472,11 +472,10 @@ const onSearchTask = async () => {
                         'Email already logged on the opportunity'
                     )}
                     searchTitle={_t('Search Opportunities')}
-                    sectionTitle={
-                        partner.leadCount
-                            ? _t('Opportunities (%s)', partner.leadCount)
-                            : _t('Opportunities')
-                    }
+                    sectionTitle={_t(
+                        'Opportunities (%s)',
+                        partner.leadCount || 0
+                    )}
                     records={partner.leads || []}
                     recordCount={partner.leadCount || 0}
                     createRecord={onCreateLead}
@@ -520,11 +519,7 @@ const onSearchTask = async () => {
                         'Email already logged on the task'
                     )}
                     searchTitle={_t('Search Tasks')}
-                    sectionTitle={
-                        partner.taskCount
-                            ? _t('Tasks (%s)', partner.taskCount)
-                            : _t('Tasks')
-                    }
+                    sectionTitle={_t('Tasks (%s)', partner.taskCount || 0)}
                     records={partner.tasks || []}
                     recordCount={partner.taskCount || 0}
                     createRecord={onCreateTask}

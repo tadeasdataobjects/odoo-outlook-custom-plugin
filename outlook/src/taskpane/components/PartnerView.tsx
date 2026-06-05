@@ -65,6 +65,11 @@ const useStyles = makeStyles({
         fontSize: '12px',
         color: '#666',
     },
+    successText: {
+        margin: '8px 5px',
+        fontSize: '12px',
+        color: '#107c10',
+    },
 })
 
 const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
@@ -80,28 +85,60 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
     // partner.id can sometimes be -1 / 0 / undefined for a non-existing contact.
     // In JavaScript, -1 is truthy, so we must check that the id is really > 0.
     const hasRealPartner = Number(partner.id || 0) > 0
+    
+    const [successMessage, setSuccessMessage] = React.useState('')
+    const successTimeout = React.useRef<number | null>(null)
 
-    const onCreate = async () => {
-        showGlobalLoading()
-        const newPartner = await Partner.savePartner(partner)
-        hideGlobalLoading()
+    React.useEffect(() => {
+        return () => {
+            if (successTimeout.current !== null) {
+                window.clearTimeout(successTimeout.current)
+            }
+        }
+    }, [])
 
-        if (!newPartner) {
-            displayError(_t('Can not save the contact'))
-            return
+    const showSuccess = (message: string) => {
+        setSuccessMessage(message)
+
+        if (successTimeout.current !== null) {
+            window.clearTimeout(successTimeout.current)
         }
 
-        newPartner.leads = newPartner.leads || []
-        newPartner.leadCount = newPartner.leadCount || 0
-
-        newPartner.tickets = newPartner.tickets || []
-        newPartner.ticketCount = newPartner.ticketCount || 0
-
-        newPartner.tasks = newPartner.tasks || []
-        newPartner.taskCount = newPartner.taskCount || 0
-
-        updatePartner(newPartner)
+        successTimeout.current = window.setTimeout(() => {
+            setSuccessMessage('')
+        }, 2500)
     }
+
+
+   const onCreate = async () => {
+       showGlobalLoading()
+
+       try {
+           const newPartner = await Partner.savePartner(partner)
+
+           if (!newPartner) {
+               displayError(_t('Can not save the contact'))
+               return
+           }
+
+           newPartner.leads = newPartner.leads || []
+           newPartner.leadCount = newPartner.leadCount || 0
+
+           newPartner.tickets = newPartner.tickets || []
+           newPartner.ticketCount = newPartner.ticketCount || 0
+
+           newPartner.tasks = newPartner.tasks || []
+           newPartner.taskCount = newPartner.taskCount || 0
+
+           updatePartner(newPartner)
+           showSuccess(_t('Contact created'))
+       } catch (error) {
+           console.error('Could not create contact', error)
+           displayError(_t('Can not save the contact'))
+       } finally {
+           hideGlobalLoading()
+       }
+   }
 
     const onOpen = () => {
         if (!hasRealPartner) {
@@ -159,30 +196,40 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
         return false
     }
 
-    const onCreateLead = async () => {
-        if (!ensurePartnerExists()) {
-            return
-        }
+   const onCreateLead = async () => {
+       if (!ensurePartnerExists()) {
+           return
+       }
 
-        const result = await Lead.createLead(partner, email)
+       showGlobalLoading()
 
-        if (!result) {
-            displayError(_t('Could not create the opportunity'))
-            return
-        }
+       try {
+           const result = await Lead.createLead(partner, email)
 
-        const [record, newPartner] = result
+           if (!result) {
+               displayError(_t('Could not create the opportunity'))
+               return
+           }
 
-        newPartner.leads = newPartner.leads || []
-        newPartner.leadCount = newPartner.leadCount || 0
+           const [record, newPartner] = result
 
-        newPartner.leads.push(record)
-        newPartner.leadCount += 1
+           newPartner.leads = newPartner.leads || []
+           newPartner.leadCount = newPartner.leadCount || 0
 
-        updatePartner(newPartner)
+           newPartner.leads.push(record)
+           newPartner.leadCount += 1
 
-        window.open(getOdooRecordURL('crm.lead', record.id))
-    }
+           updatePartner(newPartner)
+           showSuccess(_t('Opportunity created'))
+
+           window.open(getOdooRecordURL('crm.lead', record.id))
+       } catch (error) {
+           console.error('Could not create opportunity', error)
+           displayError(_t('Could not create the opportunity'))
+       } finally {
+           hideGlobalLoading()
+       }
+   }
 
  const onSearchLead = async () => {
      if (!ensurePartnerExists()) {
@@ -307,32 +354,40 @@ const PartnerView: React.FC<PartnerViewProps> = (props: PartnerViewProps) => {
             return
         }
 
-        const onSelectProject = async (
-            project: Project,
-            backCount: number = 1
-        ) => {
-            showGlobalLoading()
-            const result = await Task.createTask(partner, project.id, email)
-            hideGlobalLoading()
+       const onSelectProject = async (
+           project: Project,
+           backCount: number = 1
+       ) => {
+           showGlobalLoading()
 
-            if (!result) {
-                displayError(_t('Could not create the task'))
-                return
-            }
+           try {
+               const result = await Task.createTask(partner, project.id, email)
 
-            const [record, newPartner] = result
+               if (!result) {
+                   displayError(_t('Could not create the task'))
+                   return
+               }
 
-            newPartner.tasks = newPartner.tasks || []
-            newPartner.taskCount = newPartner.taskCount || 0
+               const [record, newPartner] = result
 
-            newPartner.tasks.push(record)
-            newPartner.taskCount += 1
+               newPartner.tasks = newPartner.tasks || []
+               newPartner.taskCount = newPartner.taskCount || 0
 
-            goBack(backCount)
-            updatePartner(newPartner)
+               newPartner.tasks.push(record)
+               newPartner.taskCount += 1
 
-            window.open(getOdooRecordURL('project.task', record.id))
-        }
+               goBack(backCount)
+               updatePartner(newPartner)
+               showSuccess(_t('Task created'))
+
+               window.open(getOdooRecordURL('project.task', record.id))
+           } catch (error) {
+               console.error('Could not create task', error)
+               displayError(_t('Could not create the task'))
+           } finally {
+               hideGlobalLoading()
+           }
+       }
 
         pushPage(
             <SelectProject
@@ -453,7 +508,9 @@ const onSearchTask = async () => {
                     onClick={() => onSearch()}
                 />
             </div>
-
+            {successMessage && (
+                <div className={styles.successText}>{successMessage}</div>
+            )}
             {!hasRealPartner && (
                 <div className={styles.warningText}>
                     {_t(
@@ -466,6 +523,7 @@ const onSearchTask = async () => {
                 <RecordsSection
                     email={email}
                     model="crm.lead"
+                    createTitle={_t('Create opportunity')}
                     descriptionAttribute="revenuesDescription"
                     logEmailTitle={_t('Log the email on the opportunity')}
                     logEmailAlreadyLogged={_t(
@@ -513,6 +571,7 @@ const onSearchTask = async () => {
                 <RecordsSection
                     email={email}
                     model="project.task"
+                    createTitle={_t('Create task')}
                     descriptionAttribute="projectName"
                     logEmailTitle={_t('Log the email on the task')}
                     logEmailAlreadyLogged={_t(

@@ -14,17 +14,13 @@ export interface RecordsSectionProps<T extends OdooRecordType> {
     logEmailAlreadyLogged: string
     searchTitle: string
     sectionTitle: string
+    createTitle?: string
     records: T[]
     recordCount: number
     createRecord: Function
     onSearch: Function
     descriptionAttribute: keyof Omit<T, 'id'>
     partnerIdToFollow?: number
-
-    /**
-     * When false, the section behaves like the original compact UI:
-     * it only shows the section title, create button and search button.
-     */
     showRecords?: boolean
 }
 
@@ -80,6 +76,7 @@ function RecordsSection<T extends OdooRecordType>(
         logEmailAlreadyLogged,
         searchTitle,
         sectionTitle,
+        createTitle,
         records,
         recordCount,
         createRecord,
@@ -92,13 +89,13 @@ function RecordsSection<T extends OdooRecordType>(
     const [showAll, setShowAll] = React.useState(false)
     const [isCreating, setIsCreating] = React.useState(false)
 
-    const _records = showAll ? records : [...records].splice(0, 5)
+    const visibleRecords = showAll ? records : [...records].splice(0, 5)
 
     const onOpen = (record: OdooRecordType) => {
         window.open(getOdooRecordURL(model, record.id))
     }
 
-    const items = _records.map((record, index) => (
+    const items = visibleRecords.map((record, index) => (
         <RecordCard
             key={`${record.id || index}-${model}`}
             model={model}
@@ -115,9 +112,17 @@ function RecordsSection<T extends OdooRecordType>(
     ))
 
     const onCreate = async () => {
+        if (isCreating) {
+            return
+        }
+
         setIsCreating(true)
-        await createRecord()
-        setIsCreating(false)
+
+        try {
+            await createRecord()
+        } finally {
+            setIsCreating(false)
+        }
     }
 
     return (
@@ -137,7 +142,7 @@ function RecordsSection<T extends OdooRecordType>(
                         <Button
                             className={styles.button}
                             icon={<AddRegular />}
-                            title={_t('New')}
+                            title={createTitle || _t('New')}
                             size="small"
                             appearance="subtle"
                             shape="circular"
@@ -152,6 +157,7 @@ function RecordsSection<T extends OdooRecordType>(
                         size="small"
                         appearance="subtle"
                         shape="circular"
+                        disabled={isCreating}
                         onClick={() => onSearch()}
                     />
                 </div>
@@ -160,7 +166,7 @@ function RecordsSection<T extends OdooRecordType>(
             {showRecords && (
                 <div className={styles.recordsContainer}>
                     {items}
-                    {_records.length < recordCount && (
+                    {visibleRecords.length < recordCount && (
                         <Button
                             className={styles.showAll}
                             appearance="subtle"

@@ -1,12 +1,12 @@
-﻿/* eslint-disable no-undef */
+/* eslint-disable no-undef */
 
 const devCerts = require("office-addin-dev-certs");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 
-const urlDev = "https://odoo-plugin.dataobjects.cz/";
-const urlProd = "https://odoo-plugin.dataobjects.cz/"; // TODO: change
+const urlDev = "https://localhost:3000/";
+const urlProd = "https://std-odoo.github.io/"; // TODO: change
 
 async function getHttpsOptions() {
   const httpsOptions = await devCerts.getHttpsServerOptions();

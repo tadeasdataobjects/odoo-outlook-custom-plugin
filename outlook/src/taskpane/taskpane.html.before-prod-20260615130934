@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en" data-framework="typescript">
 
 <head>
@@ -9,29 +9,6 @@
 
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <script>
-        (function () {
-            var ODOO_TEST_DB = "odooprod";
-            var ODOO_BASE_URL = "https://odoo-plugin.dataobjects.cz";
-
-            try {
-                if (localStorage.getItem("baseURL") !== ODOO_BASE_URL) {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                }
-                localStorage.setItem("baseURL", ODOO_BASE_URL);
-            } catch (e) {
-                console.warn("Could not prepare Odoo add-in storage", e);
-            }
-
-            fetch("/web?db=" + encodeURIComponent(ODOO_TEST_DB), {
-                method: "GET",
-                credentials: "include",
-                redirect: "follow",
-                cache: "no-store"
-            }).catch(function () {});
-        })();
-    </script>
 </head>
 
 <body style="width: 100%; height: 100%; margin: 0; padding: 0;">

@@ -1,4 +1,4 @@
-﻿import PostalMime from 'postal-mime'
+import PostalMime from 'postal-mime'
 
 /**
  * Remove quoted/replied/forwarded content and keep only the latest visible email.
@@ -12,15 +12,12 @@ function extractLatestEmailHtml(html: string): string {
 
     const selectorsToRemove = [
         '#divRplyFwdMsg',
-        '#appendonsend',
         '.gmail_quote',
         '.moz-cite-prefix',
         'blockquote',
         '[type="cite"]',
         '.yahoo_quoted',
         '.protonmail_quote',
-        '.OutlookMessageHeader',
-        '.ms-outlook-mobile-signature',
     ]
 
     for (const selector of selectorsToRemove) {
@@ -29,42 +26,45 @@ function extractLatestEmailHtml(html: string): string {
         }
     }
 
-    const headerRegexes = [
+    const separatorPatterns = [
         /-----Original Message-----/i,
         /----- Forwarded message -----/i,
         /Begin forwarded message:/i,
 
-        /(^|\n|\r)\s*From:\s+/i,
-        /(^|\n|\r)\s*Sent:\s+/i,
-        /(^|\n|\r)\s*To:\s+/i,
-        /(^|\n|\r)\s*Subject:\s+/i,
+        // English Outlook headers
+        /(^|\n)\s*From:\s.+/i,
+        /(^|\n)\s*Sent:\s.+/i,
+        /(^|\n)\s*To:\s.+/i,
+        /(^|\n)\s*Subject:\s.+/i,
 
-        /(^|\n|\r)\s*Od:\s+/i,
-        /(^|\n|\r)\s*Odeslano:\s+/i,
-        /(^|\n|\r)\s*Odesláno:\s+/i,
-        /(^|\n|\r)\s*Komu:\s+/i,
-        /(^|\n|\r)\s*Predmet:\s+/i,
-        /(^|\n|\r)\s*Předmět:\s+/i,
+        // Czech headers
+        /(^|\n)\s*Od:\s.+/i,
+        /(^|\n)\s*Odesláno:\s.+/i,
+        /(^|\n)\s*Komu:\s.+/i,
+        /(^|\n)\s*Předmět:\s.+/i,
 
-        /(^|\n|\r)\s*Odoslane:\s+/i,
-        /(^|\n|\r)\s*Odoslané:\s+/i,
+        // Slovak headers
+        /(^|\n)\s*Odoslané:\s.+/i,
+        /(^|\n)\s*Predmet:\s.+/i,
     ]
 
     const blockElements = Array.from(
-        doc.body.querySelectorAll('div, p, table, tbody, tr, td, section, hr')
+        doc.body.querySelectorAll('div, p, table, tr, td, section')
     )
 
     for (const element of blockElements) {
-        const text = (element.textContent || '')
-            .replace(/\u00a0/g, ' ')
-            .replace(/[ \t]+/g, ' ')
-            .trim()
+        const text = (element.textContent || '').replace(/\u00a0/g, ' ').trim()
 
-        const htmlText = element.outerHTML || ''
+        if (!text) {
+            continue
+        }
 
         const looksLikeReplyHeader =
-            headerRegexes.some((pattern) => pattern.test(text)) ||
-            headerRegexes.some((pattern) => pattern.test(htmlText))
+            separatorPatterns.some((pattern) => pattern.test(text)) &&
+            (/(^|\n)\s*(From|Od):\s/i.test(text) ||
+                /(^|\n)\s*(Sent|Odesláno|Odoslané):\s/i.test(text) ||
+                /-----Original Message-----/i.test(text) ||
+                /Begin forwarded message:/i.test(text))
 
         if (looksLikeReplyHeader) {
             removeElementAndFollowingSiblings(element)
@@ -72,24 +72,7 @@ function extractLatestEmailHtml(html: string): string {
         }
     }
 
-    let cleaned = doc.body.innerHTML.trim()
-
-    const htmlSeparators = [
-        /<div[^>]*id=["']divRplyFwdMsg["'][\s\S]*$/i,
-        /<div[^>]*id=["']appendonsend["'][\s\S]*$/i,
-        /<blockquote[\s\S]*$/i,
-        /<hr[\s\S]*$/i,
-        /-----Original Message-----[\s\S]*$/i,
-        /----- Forwarded message -----[\s\S]*$/i,
-        /Begin forwarded message:[\s\S]*$/i,
-        /(\s|&nbsp;)*(From|Od):(\s|&nbsp;)+[\s\S]*(Sent|Odeslano|Odesláno|To|Komu|Subject|Predmet|Předmět):[\s\S]*$/i,
-    ]
-
-    for (const separator of htmlSeparators) {
-        cleaned = cleaned.replace(separator, '')
-    }
-
-    return cleaned.trim()
+    return doc.body.innerHTML.trim()
 }
 
 function removeElementAndFollowingSiblings(element: Element): void {
@@ -106,10 +89,6 @@ function removeElementAndFollowingSiblings(element: Element): void {
         const next: ChildNode | null = current.nextSibling
         current.parentNode?.removeChild(current)
         current = next
-    }
-
-    if (!parent.textContent?.trim() && parent.parentElement) {
-        parent.remove()
     }
 }
 

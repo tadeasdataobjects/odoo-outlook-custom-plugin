@@ -1,36 +1,3 @@
-﻿function imageToSrc(value?: string | false | null): string {
-    if (!value) {
-        return 'assets/person.png'
-    }
-
-    if (
-        value.startsWith('http://') ||
-        value.startsWith('https://') ||
-        value.startsWith('data:') ||
-        value.startsWith('/') ||
-        value.startsWith('assets/')
-    ) {
-        return value
-    }
-
-    if (value.startsWith('PD94') || value.startsWith('PHN2Zy')) {
-        return `data:image/svg+xml;base64,${value}`
-    }
-
-    if (value.startsWith('/9j/')) {
-        return `data:image/jpeg;base64,${value}`
-    }
-
-    if (value.startsWith('iVBOR')) {
-        return `data:image/png;base64,${value}`
-    }
-
-    if (value.startsWith('R0lGOD')) {
-        return `data:image/gif;base64,${value}`
-    }
-
-    return `data:image/png;base64,${value}`
-}
 import API from '../helpers/api'
 import { postJsonRpc } from '../helpers/http'
 import { _t } from '../helpers/translate'
@@ -100,7 +67,7 @@ export class Partner extends OdooRecord {
         partner.name = values.name
         partner.email = values.email
 
-        partner.image = imageToSrc(values.image)
+        partner.image = values.image || 'assets/person.png'
         partner.parentName = values.parent_name
 
         partner.phone = values.phone
@@ -127,7 +94,7 @@ export class Partner extends OdooRecord {
 
         const newPartner = partner.clone()
         newPartner.id = response.id
-        newPartner.image = imageToSrc(response.image)
+        newPartner.image = response.image
         newPartner.isWritable = true
         return newPartner
     }

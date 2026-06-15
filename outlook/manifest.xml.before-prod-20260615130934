@@ -1,20 +1,20 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
   xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
   xsi:type="MailApp">
-  <Id>78b944e5-91e9-41c0-a67e-32650da653e1</Id>
-  <Version>1.0.1.0</Version>
+  <Id>11111111-2222-3333-4444-555555555555</Id>
+  <Version>3.0.1</Version>
   <ProviderName>Odoo</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="DO Outlook Plugin PROD SOURCE" />
+  <DisplayName DefaultValue="Odoo for Outlook DEV" />
   <Description DefaultValue="Odoo for Outlook local development version" />
-  <IconUrl DefaultValue="https://odoo-plugin.dataobjects.cz/assets/icon-64.png" />
-  <HighResolutionIconUrl DefaultValue="https://odoo-plugin.dataobjects.cz/assets/icon-128.png" />
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-64.png" />
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-128.png" />
   <SupportUrl DefaultValue="https://www.odoo.com/help" />
   <AppDomains>
-    <AppDomain>https://odoo-plugin.dataobjects.cz</AppDomain>
+    <AppDomain>https://localhost:3000/</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Mailbox" />
@@ -27,7 +27,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://odoo-plugin.dataobjects.cz/taskpane.html?v=20260615source1" />
+        <SourceLocation DefaultValue="https://localhost:3000/taskpane.html" />
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -78,14 +78,14 @@
       </Hosts>
       <Resources>
         <bt:Images>
-          <bt:Image id="Icon.16x16" DefaultValue="https://odoo-plugin.dataobjects.cz/assets/icon-16.png" />
-          <bt:Image id="Icon.32x32" DefaultValue="https://odoo-plugin.dataobjects.cz/assets/icon-32.png" />
-          <bt:Image id="Icon.64x64" DefaultValue="https://odoo-plugin.dataobjects.cz/assets/icon-64.png" />
-          <bt:Image id="Icon.80x80" DefaultValue="https://odoo-plugin.dataobjects.cz/assets/icon-80.png" />
-          <bt:Image id="Icon.128x128" DefaultValue="https://odoo-plugin.dataobjects.cz/assets/icon-128.png" />
+          <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png" />
+          <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png" />
+          <bt:Image id="Icon.64x64" DefaultValue="https://localhost:3000/assets/icon-64.png" />
+          <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png" />
+          <bt:Image id="Icon.128x128" DefaultValue="https://localhost:3000/assets/icon-128.png" />
         </bt:Images>
         <bt:Urls>
-          <bt:Url id="Taskpane.Url" DefaultValue="https://odoo-plugin.dataobjects.cz/taskpane.html?v=20260615source1" />
+          <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html" />
         </bt:Urls>
         <bt:ShortStrings>
           <bt:String id="GroupLabel" DefaultValue="Odoo DEV" />

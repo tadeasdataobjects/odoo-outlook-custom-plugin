@@ -1,94 +1,6 @@
 ﻿import PostalMime from 'postal-mime'
 
 /**
- * Convert HTML to plain text-like content so reply separators can be detected
- * more reliably without accidentally cutting normal email text.
- */
-function htmlToComparableText(html: string): string {
-    const doc = new DOMParser().parseFromString(
-        html || '<div></div>',
-        'text/html'
-    )
-
-    if (!doc.body) {
-        return ''
-    }
-
-    for (const br of Array.from(doc.querySelectorAll('br'))) {
-        br.replaceWith('\n')
-    }
-
-    for (const element of Array.from(
-        doc.body.querySelectorAll(
-            'div, p, table, tbody, tr, td, section, li, hr'
-        )
-    )) {
-        element.append('\n')
-    }
-
-    return (doc.body.textContent || '')
-        .replace(/\u00a0/g, ' ')
-        .replace(/[ \t]+/g, ' ')
-        .replace(/\n[ \t]+/g, '\n')
-        .replace(/[ \t]+\n/g, '\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim()
-}
-
-/**
- * Detect whether a block of text is a real reply header.
- * We require a reasonably complete header block, not just a single "Od:" or "From:"
- * occurrence, because normal emails can contain these words in the body.
- */
-function isReplyHeaderText(text: string): boolean {
-    const normalized = (text || '')
-        .replace(/\u00a0/g, ' ')
-        .replace(/[ \t]+/g, ' ')
-        .trim()
-
-    if (!normalized) {
-        return false
-    }
-
-    if (
-        /-----Original Message-----/i.test(normalized) ||
-        /----- Forwarded message -----/i.test(normalized) ||
-        /Begin forwarded message:/i.test(normalized)
-    ) {
-        return true
-    }
-
-    if (/(^|\n|\r)\s*On .{3,300} wrote:\s*($|\n|\r)/i.test(normalized)) {
-        return true
-    }
-
-    if (/(^|\n|\r)\s*Dne .{3,300} napsal\(a\):\s*($|\n|\r)/i.test(normalized)) {
-        return true
-    }
-
-    if (/(^|\n|\r)\s*Dne .{3,300} napsal:\s*($|\n|\r)/i.test(normalized)) {
-        return true
-    }
-
-    if (
-        /(^|\n|\r)\s*Dňa .{3,300} napísal\(a\):\s*($|\n|\r)/i.test(normalized)
-    ) {
-        return true
-    }
-
-    const hasFrom = /(^|\n|\r)\s*(From|Od):\s+/i.test(normalized)
-    const hasSent =
-        /(^|\n|\r)\s*(Sent|Odeslano|Odesláno|OdeslĂˇno|Odoslane|Odoslané|OdoslanĂ©):\s+/i.test(
-            normalized
-        )
-    const hasTo = /(^|\n|\r)\s*(To|Komu):\s+/i.test(normalized)
-    const hasSubject =
-        /(^|\n|\r)\s*(Subject|Predmet|Předmět|PĹ™edmÄ›t):\s+/i.test(normalized)
-
-    return hasFrom && hasSent && (hasTo || hasSubject)
-}
-
-/**
  * Remove quoted/replied/forwarded content and keep only the latest visible email.
  */
 function extractLatestEmailHtml(html: string): string {
@@ -96,14 +8,7 @@ function extractLatestEmailHtml(html: string): string {
         return ''
     }
 
-    const doc = new DOMParser().parseFromString(
-        html || '<div></div>',
-        'text/html'
-    )
-
-    if (!doc.body) {
-        return '<p></p>'
-    }
+    const doc = new DOMParser().parseFromString(html, 'text/html')
 
     const selectorsToRemove = [
         '#divRplyFwdMsg',
@@ -115,8 +20,7 @@ function extractLatestEmailHtml(html: string): string {
         '.yahoo_quoted',
         '.protonmail_quote',
         '.OutlookMessageHeader',
-        '.ms-outlook-mobile-reference-message',
-        '#mail-editor-reference-message-container',
+        '.ms-outlook-mobile-signature',
     ]
 
     for (const selector of selectorsToRemove) {
@@ -125,106 +29,69 @@ function extractLatestEmailHtml(html: string): string {
         }
     }
 
-    const removeNodeAndFollowingContent = (node: Node, root: Element): void => {
-        let current: Node | null = node
+    const headerRegexes = [
+        /-----Original Message-----/i,
+        /----- Forwarded message -----/i,
+        /Begin forwarded message:/i,
 
-        while (current && current !== root) {
-            let sibling = current.nextSibling
+        /(^|\n|\r)\s*From:\s+/i,
+        /(^|\n|\r)\s*Sent:\s+/i,
+        /(^|\n|\r)\s*To:\s+/i,
+        /(^|\n|\r)\s*Subject:\s+/i,
 
-            while (sibling) {
-                const nextSibling = sibling.nextSibling
-                sibling.parentNode?.removeChild(sibling)
-                sibling = nextSibling
-            }
+        /(^|\n|\r)\s*Od:\s+/i,
+        /(^|\n|\r)\s*Odeslano:\s+/i,
+        /(^|\n|\r)\s*Odesláno:\s+/i,
+        /(^|\n|\r)\s*Komu:\s+/i,
+        /(^|\n|\r)\s*Predmet:\s+/i,
+        /(^|\n|\r)\s*Předmět:\s+/i,
 
-            const parent = current.parentNode
-            parent?.removeChild(current)
-            current = parent
-        }
-    }
+        /(^|\n|\r)\s*Odoslane:\s+/i,
+        /(^|\n|\r)\s*Odoslané:\s+/i,
+    ]
 
-    const elements: Element[] = []
-    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT)
+    const blockElements = Array.from(
+        doc.body.querySelectorAll('div, p, table, tbody, tr, td, section, hr')
+    )
 
-    let node = walker.nextNode()
-    while (node) {
-        elements.push(node as Element)
-        node = walker.nextNode()
-    }
+    for (const element of blockElements) {
+        const text = (element.textContent || '')
+            .replace(/\u00a0/g, ' ')
+            .replace(/[ \t]+/g, ' ')
+            .trim()
 
-    for (const element of elements) {
-        const comparableText = htmlToComparableText(element.outerHTML || '')
+        const htmlText = element.outerHTML || ''
 
-        if (isReplyHeaderText(comparableText)) {
-            removeNodeAndFollowingContent(element, doc.body)
+        const looksLikeReplyHeader =
+            headerRegexes.some((pattern) => pattern.test(text)) ||
+            headerRegexes.some((pattern) => pattern.test(htmlText))
+
+        if (looksLikeReplyHeader) {
+            removeElementAndFollowingSiblings(element)
             break
         }
     }
 
     let cleaned = doc.body.innerHTML.trim()
 
-    const hardSeparators = [
+    const htmlSeparators = [
         /<div[^>]*id=["']divRplyFwdMsg["'][\s\S]*$/i,
         /<div[^>]*id=["']appendonsend["'][\s\S]*$/i,
-        /<div[^>]*class=["'][^"']*gmail_quote[^"']*["'][\s\S]*$/i,
         /<blockquote[\s\S]*$/i,
+        /<hr[\s\S]*$/i,
         /-----Original Message-----[\s\S]*$/i,
         /----- Forwarded message -----[\s\S]*$/i,
         /Begin forwarded message:[\s\S]*$/i,
-        /(^|\n|\r)\s*On .{3,300} wrote:[\s\S]*$/i,
-        /(^|\n|\r)\s*Dne .{3,300} napsal\(a\):[\s\S]*$/i,
-        /(^|\n|\r)\s*Dne .{3,300} napsal:[\s\S]*$/i,
-        /(^|\n|\r)\s*Dňa .{3,300} napísal\(a\):[\s\S]*$/i,
-        /(^|\n|\r)\s*(From|Od):\s+.{1,300}(\n|\r|\r\n)\s*(Sent|Odeslano|Odesláno|OdeslĂˇno|To|Komu|Subject|Předmět|PĹ™edmÄ›t):[\s\S]*$/i,
+        /(\s|&nbsp;)*(From|Od):(\s|&nbsp;)+[\s\S]*(Sent|Odeslano|Odesláno|To|Komu|Subject|Predmet|Předmět):[\s\S]*$/i,
     ]
 
-    for (const separator of hardSeparators) {
+    for (const separator of htmlSeparators) {
         cleaned = cleaned.replace(separator, '')
     }
 
-    cleaned = cleaned.trim()
-
-    if (cleaned) {
-        return cleaned
-    }
-
-    // Fallback bez celého vlákna:
-    // když HTML parser všechno odstraní nebo nenajde čistou hranici,
-    // vezmeme jen text před první odpovědní hlavičkou.
-    let textFallback = htmlToComparableText(html)
-
-    const textSeparators = [
-        /-----Original Message-----[\s\S]*$/i,
-        /----- Forwarded message -----[\s\S]*$/i,
-        /Begin forwarded message:[\s\S]*$/i,
-        /(^|\n|\r)\s*On .{3,300} wrote:[\s\S]*$/i,
-        /(^|\n|\r)\s*Dne .{3,300} napsal\(a\):[\s\S]*$/i,
-        /(^|\n|\r)\s*Dne .{3,300} napsal:[\s\S]*$/i,
-        /(^|\n|\r)\s*Dňa .{3,300} napísal\(a\):[\s\S]*$/i,
-        /(^|\n|\r)\s*(From|Od):\s+.{1,300}(\n|\r|\r\n)\s*(Sent|Odeslano|Odesláno|OdeslĂˇno|To|Komu|Subject|Předmět|PĹ™edmÄ›t):[\s\S]*$/i,
-    ]
-
-    for (const separator of textSeparators) {
-        textFallback = textFallback.replace(separator, '')
-    }
-
-    textFallback = textFallback.trim()
-
-    if (!textFallback) {
-        return '<p><em>Nepodařilo se bezpečně najít poslední zprávu v tomto vlákně.</em></p>'
-    }
-
-    // Bezpečnostní limit, aby se omylem neposlalo obří celé vlákno.
-    if (textFallback.length > 12000) {
-        textFallback = textFallback.slice(0, 12000).trim()
-    }
-
-    return `<div>${textFallback
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\n/g, '<br>')}</div>`
+    return cleaned.trim()
 }
+
 function removeElementAndFollowingSiblings(element: Element): void {
     const parent = element.parentElement
 
@@ -255,11 +122,7 @@ function normalizeEmailBodyForOdoo(html: string): string {
         return '<p></p>'
     }
 
-    const doc = new DOMParser().parseFromString(html || '<p></p>', 'text/html')
-
-    if (!doc.body) {
-        return html || '<p></p>'
-    }
+    const doc = new DOMParser().parseFromString(html, 'text/html')
 
     for (const element of Array.from(
         doc.body.querySelectorAll('script, style, meta, title, link')
@@ -284,6 +147,7 @@ function normalizeEmailBodyForOdoo(html: string): string {
                 continue
             }
 
+            // Outlook produces a lot of noisy classes/styles that make chatter ugly.
             if (
                 name === 'class' ||
                 name === 'style' ||
@@ -298,9 +162,9 @@ function normalizeEmailBodyForOdoo(html: string): string {
         }
     }
 
-    const cleaned = doc.body ? doc.body.innerHTML.trim() : ''
+    const cleaned = doc.body.innerHTML.trim()
 
-    return cleaned || html || '<p></p>'
+    return cleaned || '<p></p>'
 }
 
 /**

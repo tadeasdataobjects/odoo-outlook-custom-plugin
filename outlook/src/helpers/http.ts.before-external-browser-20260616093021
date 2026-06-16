@@ -1,4 +1,4 @@
-﻿import api from './api'
+import api from './api'
 
 export enum HttpVerb {
     GET = 'GET',
@@ -234,6 +234,9 @@ export async function exchangeAuthCodeForAccessToken(
 }
 
 export function getOdooRecordURL(model: string, recordId: number): string {
-    const odooUrl = 'https://odoo.dataobjects.cz'
-    return `${odooUrl}/odoo/${model}/${recordId}?model=${model}&resId=${recordId}`
+    const baseUrl = localStorage.getItem('odoo_url')
+    return (
+        baseUrl +
+        `/mail_plugin/redirect_to_record/${model}/?record_id=${recordId}`
+    )
 }

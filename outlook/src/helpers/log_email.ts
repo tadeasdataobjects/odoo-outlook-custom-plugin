@@ -52,37 +52,54 @@ async function _formatEmailBody(
     const body = await email.getBody()
     const loggedAt = new Date().toLocaleString('cs-CZ')
 
+    const isRepeated = loggedCount > 0
+
     const themes = [
         {
-            background: '#eaf8fc',
-            border: '#9fd3e3',
-            title: '📧 E-mail z Outlooku',
+            outerBackground: '#dff5fb',
+            outerBorder: '#1496b8',
+            headerBackground: '#1496b8',
+            sectionBorder: '#74c7dc',
+            accent: '#1496b8',
         },
         {
-            background: '#fff7df',
-            border: '#f0c36d',
-            title: '📧 E-mail z Outlooku · opakované vložení',
+            outerBackground: '#fff4d6',
+            outerBorder: '#d99a16',
+            headerBackground: '#d99a16',
+            sectionBorder: '#e9bf66',
+            accent: '#d99a16',
         },
         {
-            background: '#f4edff',
-            border: '#c7a8f5',
-            title: '📧 E-mail z Outlooku · opakované vložení',
+            outerBackground: '#f0e7ff',
+            outerBorder: '#8b5bd6',
+            headerBackground: '#8b5bd6',
+            sectionBorder: '#b99aea',
+            accent: '#8b5bd6',
         },
         {
-            background: '#edf9ef',
-            border: '#9bd3a8',
-            title: '📧 E-mail z Outlooku · opakované vložení',
+            outerBackground: '#e7f8ec',
+            outerBorder: '#3b9f57',
+            headerBackground: '#3b9f57',
+            sectionBorder: '#8dd39f',
+            accent: '#3b9f57',
         },
     ]
 
     const theme = themes[loggedCount % themes.length]
-    const insertLabel =
-        loggedCount === 0
-            ? `vloženo ${loggedAt}`
-            : `vloženo znovu č. ${loggedCount + 1} · ${loggedAt}`
+
+    const title = isRepeated
+        ? '📧 E-mail z Outlooku · opakované vložení'
+        : '📧 E-mail z Outlooku'
+
+    const insertLabel = isRepeated
+        ? `Vloženo znovu č. ${loggedCount + 1} · ${loggedAt}`
+        : `Vloženo ${loggedAt}`
 
     const cc = email.emailCC
-        ? `<div><strong>Cc:</strong> ${escapeHtml(email.emailCC)}</div>`
+        ? `
+            <div style="height: 5px; line-height: 5px; font-size: 1px;">&nbsp;</div>
+            <div><strong>Cc:</strong> ${escapeHtml(email.emailCC)}</div>
+        `
         : ''
 
     const warning = error
@@ -95,24 +112,110 @@ async function _formatEmailBody(
            </div>`
         : ''
 
+    const spacerSmall =
+        '<div style="height: 10px; line-height: 10px; font-size: 1px;">&nbsp;</div>'
+    const spacerMedium =
+        '<div style="height: 18px; line-height: 18px; font-size: 1px;">&nbsp;</div>'
+
     return `
-        <div class="o_mail_plugin_logged_email" style="margin: 10px 0;">
-            <div style="border: 1px solid ${theme.border}; background: ${theme.background}; border-radius: 12px; padding: 22px; margin: 16px 0;">
-                <div style="font-weight: 600; color: #3f4d55; font-size: 15px; margin-bottom: 14px;">
-                    ${theme.title} · ${escapeHtml(insertLabel)}
+        <div class="o_mail_plugin_logged_email" style="
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin: 14px 0 18px 0;
+            padding: 0;
+            color: #263238;
+        ">
+            <div style="
+                background: ${theme.outerBackground};
+                border: 4px solid ${theme.outerBorder};
+                border-radius: 14px;
+                padding: 20px;
+                box-sizing: border-box;
+                width: 100%;
+                max-width: 100%;
+            ">
+                <div style="
+                    background: ${theme.headerBackground};
+                    color: #ffffff;
+                    border-radius: 9px;
+                    padding: 12px 16px;
+                    font-size: 15px;
+                    line-height: 1.45;
+                    font-weight: 700;
+                ">
+                    ${title}
+
+                    <div style="height: 6px; line-height: 6px; font-size: 1px;">&nbsp;</div>
+
+                    <div style="
+                        font-size: 12px;
+                        line-height: 1.35;
+                        font-weight: 500;
+                        color: #eefaff;
+                    ">
+                        ${escapeHtml(insertLabel)}
+                    </div>
                 </div>
 
-                <div style="background: #ffffff; border: 1px solid #d8e2e7; border-radius: 8px; padding: 16px; margin-bottom: 12px; font-size: 13px; color: #555; line-height: 1.45;">
-                    <div><strong>From:</strong> ${escapeHtml(email.emailFrom)}</div>
-                    <div><strong>To:</strong> ${escapeHtml(email.emailTo)}</div>
+                ${spacerMedium}
+
+                <div style="
+                    background: #ffffff;
+                    border: 2px solid ${theme.sectionBorder};
+                    border-left: 7px solid ${theme.accent};
+                    border-radius: 10px;
+                    padding: 16px 18px;
+                    font-size: 13px;
+                    color: #263238;
+                    line-height: 1.6;
+                    box-sizing: border-box;
+                ">
+                    <div style="font-weight: 700; color: #294b59;">
+                        Informace o e-mailu
+                    </div>
+
+                    ${spacerSmall}
+
+                    <div><strong>Od:</strong> ${escapeHtml(email.emailFrom)}</div>
+                    <div style="height: 5px; line-height: 5px; font-size: 1px;">&nbsp;</div>
+                    <div><strong>Komu:</strong> ${escapeHtml(email.emailTo)}</div>
                     ${cc}
-                    <div><strong>Subject:</strong> ${escapeHtml(email.subject)}</div>
+                    <div style="height: 5px; line-height: 5px; font-size: 1px;">&nbsp;</div>
+                    <div><strong>Předmět:</strong> ${escapeHtml(email.subject)}</div>
                 </div>
 
-                <div class="o_mail_plugin_logged_email_body" style="background: #ffffff; border: 1px solid #d8e2e7; border-radius: 8px; padding: 22px; line-height: 1.5;">
+                ${spacerMedium}
+
+                <div style="
+                    font-weight: 700;
+                    color: #294b59;
+                    font-size: 13px;
+                ">
+                    Obsah e-mailu
+                </div>
+
+                ${spacerSmall}
+
+                <div class="o_mail_plugin_logged_email_body" style="
+                    background: #ffffff;
+                    border: 2px solid ${theme.sectionBorder};
+                    border-left: 7px solid ${theme.accent};
+                    border-radius: 10px;
+                    padding: 24px 26px;
+                    color: #1f2933;
+                    font-size: 13px;
+                    line-height: 1.7;
+                    word-break: break-word;
+                    overflow-wrap: anywhere;
+                    box-sizing: border-box;
+                    min-height: 70px;
+                ">
                     ${body}
                 </div>
 
+                ${warning ? spacerMedium : ''}
                 ${warning}
             </div>
         </div>

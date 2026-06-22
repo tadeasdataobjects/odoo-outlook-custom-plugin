@@ -13,6 +13,8 @@
         (function () {
             var ODOO_TEST_DB = "outlookplugin";
             var ODOO_BASE_URL = "https://violator-goliath-barrier.ngrok-free.dev";
+            var ODOO_API_BASE_URL = "https://localhost:3000";
+var ODOO_RECORD_BASE_URL = "https://violator-goliath-barrier.ngrok-free.dev";
 
             try {
                 if (localStorage.getItem("baseURL") !== ODOO_BASE_URL) {
@@ -20,6 +22,13 @@
                     sessionStorage.clear();
                 }
                 localStorage.setItem("baseURL", ODOO_BASE_URL);
+                localStorage.setItem("baseURL", ODOO_API_BASE_URL);
+localStorage.setItem("odoo_url", ODOO_RECORD_BASE_URL);
+localStorage.setItem("odoo_db", ODOO_TEST_DB);
+
+
+
+
             } catch (e) {
                 console.warn("Could not prepare Odoo add-in storage", e);
             }

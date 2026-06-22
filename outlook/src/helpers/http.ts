@@ -234,6 +234,10 @@ export async function exchangeAuthCodeForAccessToken(
 }
 
 export function getOdooRecordURL(model: string, recordId: number): string {
-    const odooUrl = 'https://odoo.dataobjects.cz'
+    const odooUrl =
+        localStorage.getItem('odoo_url') ||
+        localStorage.getItem('baseURL') ||
+        'https://odoo.dataobjects.cz'
+
     return `${odooUrl}/odoo/${model}/${recordId}?model=${model}&resId=${recordId}`
 }

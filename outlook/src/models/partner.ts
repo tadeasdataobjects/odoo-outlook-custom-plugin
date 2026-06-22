@@ -149,15 +149,33 @@ export class Partner extends OdooRecord {
             partner_id: partnerId,
         })
 
+        console.log('GET_PARTNER response', {
+            name,
+            email,
+            partnerId,
+            response,
+        })
+
         if (response && response.error) {
             const error = new ErrorMessage('odoo', response.error)
             const partner = Partner.fromOdooResponse({ name, email })
             return [partner, error]
         }
 
-        if (!response || !response.partner) {
+        if (!response) {
             const error = new ErrorMessage('http_error_odoo')
             const partner = Partner.fromOdooResponse({ name, email })
+            return [partner, error]
+        }
+
+        if (!response.partner) {
+            const error = new ErrorMessage()
+            const partner = Partner.fromOdooResponse({ name, email })
+
+            partner.canCreatePartner = response.can_create_partner !== false
+            partner.canCreateProject = response.can_create_project !== false
+            partner.isWritable = true
+
             return [partner, error]
         }
 
@@ -209,13 +227,22 @@ export class Partner extends OdooRecord {
         query: string | string[]
     ): Promise<[Partner[], ErrorMessage]> {
         const response = await postJsonRpc(API.SEARCH_PARTNER, { query })
-
-        if (!response?.length) {
+console.log('SEARCH_PARTNER response', {
+    query,
+    response,
+})
+        if (response === null || response === undefined) {
             return [[], new ErrorMessage('http_error_odoo')]
         }
 
+        const partnerValues = Array.isArray(response?.[0])
+            ? response[0]
+            : Array.isArray(response)
+              ? response
+              : []
+
         return [
-            response[0].map((values: Record<string, any>) =>
+            partnerValues.map((values: Record<string, any>) =>
                 Partner.fromOdooResponse(values)
             ),
             new ErrorMessage(),

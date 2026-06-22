@@ -12,6 +12,34 @@ function escapeHtml(value: string): string {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;')
 }
+function extractEmailAddresses(value: string): string[] {
+    return (
+        (value || '')
+            .toLowerCase()
+            .match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g) || []
+    )
+}
+
+function getCurrentMailboxEmail(): string {
+    try {
+        return (
+            Office.context.mailbox.userProfile.emailAddress || ''
+        ).toLowerCase()
+    } catch {
+        return ''
+    }
+}
+
+function getEmailDirection(email: Email): 'incoming' | 'outgoing' {
+    const mailboxEmail = getCurrentMailboxEmail()
+    const fromEmails = extractEmailAddresses(email.emailFrom)
+
+    if (mailboxEmail && fromEmails.includes(mailboxEmail)) {
+        return 'outgoing'
+    }
+
+    return 'incoming'
+}
 
 function getSafeOdooHost(): string {
     try {
@@ -53,43 +81,36 @@ async function _formatEmailBody(
     const loggedAt = new Date().toLocaleString('cs-CZ')
 
     const isRepeated = loggedCount > 0
+    const direction = getEmailDirection(email)
+    const isOutgoing = direction === 'outgoing'
 
-    const themes = [
-        {
-            outerBackground: '#dff5fb',
-            outerBorder: '#1496b8',
-            headerBackground: '#1496b8',
-            sectionBorder: '#74c7dc',
-            accent: '#1496b8',
-        },
-        {
-            outerBackground: '#fff4d6',
-            outerBorder: '#d99a16',
-            headerBackground: '#d99a16',
-            sectionBorder: '#e9bf66',
-            accent: '#d99a16',
-        },
-        {
-            outerBackground: '#f0e7ff',
-            outerBorder: '#8b5bd6',
-            headerBackground: '#8b5bd6',
-            sectionBorder: '#b99aea',
-            accent: '#8b5bd6',
-        },
-        {
-            outerBackground: '#e7f8ec',
-            outerBorder: '#3b9f57',
-            headerBackground: '#3b9f57',
-            sectionBorder: '#8dd39f',
-            accent: '#3b9f57',
-        },
-    ]
-
-    const theme = themes[loggedCount % themes.length]
+    const theme = isOutgoing
+        ? {
+              outerBackground: '#fff7df',
+              outerBorder: '#d99a16',
+              headerBackground: '#fff0bf',
+              sectionBorder: '#e9bf66',
+              accent: '#d99a16',
+              titleColor: '#5a3b00',
+              labelColor: '#6b4d12',
+              directionLabel: 'Odchozí e-mail',
+              directionIcon: '📤',
+          }
+        : {
+              outerBackground: '#edf9ef',
+              outerBorder: '#3b9f57',
+              headerBackground: '#d9f2df',
+              sectionBorder: '#8dd39f',
+              accent: '#3b9f57',
+              titleColor: '#234c2e',
+              labelColor: '#315f3c',
+              directionLabel: 'Příchozí e-mail',
+              directionIcon: '📥',
+          }
 
     const title = isRepeated
-        ? '📧 E-mail z Outlooku · opakované vložení'
-        : '📧 E-mail z Outlooku'
+        ? `${theme.directionIcon} ${theme.directionLabel} z Outlooku · opakované vložení`
+        : `${theme.directionIcon} ${theme.directionLabel} z Outlooku`
 
     const insertLabel = isRepeated
         ? `Vloženo znovu č. ${loggedCount + 1} · ${loggedAt}`
@@ -97,128 +118,197 @@ async function _formatEmailBody(
 
     const cc = email.emailCC
         ? `
-            <div style="height: 5px; line-height: 5px; font-size: 1px;">&nbsp;</div>
-            <div><strong>Cc:</strong> ${escapeHtml(email.emailCC)}</div>
+                                                <tr>
+                                                    <td style="padding: 6px 0 0 0; font-size: 13px; line-height: 1.5; color: #263238;">
+                                                        <strong>Cc:</strong> ${escapeHtml(email.emailCC)}
+                                                    </td>
+                                                </tr>
         `
         : ''
 
     const warning = error
-        ? `<div style="margin-top: 14px; color: #875A7B;">
-                <em>${escapeHtml(
-                    _t(
-                        'Attachments could not be logged in Odoo because their total size exceeded the allowed maximum.'
-                    )
-                )}</em>
-           </div>`
+        ? `
+            <tr>
+                <td height="16" style="height: 16px; line-height: 16px; font-size: 1px;">&nbsp;</td>
+            </tr>
+            <tr>
+                <td style="font-size: 13px; color: #875A7B; line-height: 1.45;">
+                    <em>${escapeHtml(
+                        _t(
+                            'Attachments could not be logged in Odoo because their total size exceeded the allowed maximum.'
+                        )
+                    )}</em>
+                </td>
+            </tr>
+        `
         : ''
 
-    const spacerSmall =
-        '<div style="height: 10px; line-height: 10px; font-size: 1px;">&nbsp;</div>'
-    const spacerMedium =
-        '<div style="height: 18px; line-height: 18px; font-size: 1px;">&nbsp;</div>'
-
     return `
-        <div class="o_mail_plugin_logged_email" style="
-            display: block;
+        <table class="o_mail_plugin_logged_email" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="
             width: 100%;
             max-width: 100%;
-            box-sizing: border-box;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 4px solid ${theme.outerBorder};
+            background-color: ${theme.outerBackground};
             margin: 14px 0 18px 0;
-            padding: 0;
             color: #263238;
-        ">
-            <div style="
-                background: ${theme.outerBackground};
-                border: 4px solid ${theme.outerBorder};
-                border-radius: 14px;
-                padding: 20px;
-                box-sizing: border-box;
-                width: 100%;
-                max-width: 100%;
-            ">
-                <div style="
-                    background: ${theme.headerBackground};
-                    color: #ffffff;
-                    border-radius: 9px;
-                    padding: 12px 16px;
-                    font-size: 15px;
-                    line-height: 1.45;
-                    font-weight: 700;
-                ">
-                    ${title}
+        " bgcolor="${theme.outerBackground}">
+            <tbody>
+                <tr>
+                    <td style="padding: 18px;">
 
-                    <div style="height: 6px; line-height: 6px; font-size: 1px;">&nbsp;</div>
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="
+                            width: 100%;
+                            border-collapse: separate;
+                            border-spacing: 0;
+                            border: 2px solid ${theme.outerBorder};
+                            background-color: ${theme.headerBackground};
+                        " bgcolor="${theme.headerBackground}">
+                            <tbody>
+                                <tr>
+                                    <td style="
+                                        padding: 14px 16px 4px 16px;
+                                        color: ${theme.titleColor};
+                                        font-size: 15px;
+                                        line-height: 1.45;
+                                        font-weight: 700;
+                                    ">
+                                        ${title}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="
+                                        padding: 0 16px 14px 16px;
+                                        color: ${theme.labelColor};
+                                        font-size: 12px;
+                                        line-height: 1.35;
+                                        font-weight: 500;
+                                    ">
+                                        ${escapeHtml(insertLabel)}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                    <div style="
-                        font-size: 12px;
-                        line-height: 1.35;
-                        font-weight: 500;
-                        color: #eefaff;
-                    ">
-                        ${escapeHtml(insertLabel)}
-                    </div>
-                </div>
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                            <tbody>
+                                <tr>
+                                    <td height="20" style="height: 20px; line-height: 20px; font-size: 1px;">&nbsp;</td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                ${spacerMedium}
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="
+                            width: 100%;
+                            border-collapse: separate;
+                            border-spacing: 0;
+                            border: 2px solid ${theme.sectionBorder};
+                            border-left: 8px solid ${theme.accent};
+                            background-color: #ffffff;
+                        " bgcolor="#ffffff">
+                            <tbody>
+                                <tr>
+                                    <td style="
+                                        padding: 16px 18px 10px 18px;
+                                        font-size: 13px;
+                                        line-height: 1.45;
+                                        color: #294b59;
+                                        font-weight: 700;
+                                    ">
+                                        Informace o e-mailu
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 18px 16px 18px;">
+                                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                            <tbody>
+                                                <tr>
+                                                    <td style="padding: 0; font-size: 13px; line-height: 1.5; color: #263238;">
+                                                        <strong>Směr:</strong> ${escapeHtml(theme.directionLabel)}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 6px 0 0 0; font-size: 13px; line-height: 1.5; color: #263238;">
+                                                        <strong>Od:</strong> ${escapeHtml(email.emailFrom)}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 6px 0 0 0; font-size: 13px; line-height: 1.5; color: #263238;">
+                                                        <strong>Komu:</strong> ${escapeHtml(email.emailTo)}
+                                                    </td>
+                                                </tr>
+                                                ${cc}
+                                                <tr>
+                                                    <td style="padding: 6px 0 0 0; font-size: 13px; line-height: 1.5; color: #263238;">
+                                                        <strong>Předmět:</strong> ${escapeHtml(email.subject)}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                <div style="
-                    background: #ffffff;
-                    border: 2px solid ${theme.sectionBorder};
-                    border-left: 7px solid ${theme.accent};
-                    border-radius: 10px;
-                    padding: 16px 18px;
-                    font-size: 13px;
-                    color: #263238;
-                    line-height: 1.6;
-                    box-sizing: border-box;
-                ">
-                    <div style="font-weight: 700; color: #294b59;">
-                        Informace o e-mailu
-                    </div>
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                            <tbody>
+                                <tr>
+                                    <td height="20" style="height: 20px; line-height: 20px; font-size: 1px;">&nbsp;</td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                    ${spacerSmall}
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                            <tbody>
+                                <tr>
+                                    <td style="
+                                        padding: 0 0 10px 2px;
+                                        color: #294b59;
+                                        font-size: 13px;
+                                        line-height: 1.4;
+                                        font-weight: 700;
+                                    ">
+                                        Obsah e-mailu
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                    <div><strong>Od:</strong> ${escapeHtml(email.emailFrom)}</div>
-                    <div style="height: 5px; line-height: 5px; font-size: 1px;">&nbsp;</div>
-                    <div><strong>Komu:</strong> ${escapeHtml(email.emailTo)}</div>
-                    ${cc}
-                    <div style="height: 5px; line-height: 5px; font-size: 1px;">&nbsp;</div>
-                    <div><strong>Předmět:</strong> ${escapeHtml(email.subject)}</div>
-                </div>
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="
+                            width: 100%;
+                            border-collapse: separate;
+                            border-spacing: 0;
+                            border: 2px solid ${theme.sectionBorder};
+                            border-left: 8px solid ${theme.accent};
+                            background-color: #ffffff;
+                        " bgcolor="#ffffff">
+                            <tbody>
+                                <tr>
+                                    <td class="o_mail_plugin_logged_email_body" style="
+                                        padding: 24px 26px;
+                                        color: #1f2933;
+                                        font-size: 13px;
+                                        line-height: 1.7;
+                                        word-break: break-word;
+                                        overflow-wrap: anywhere;
+                                    ">
+                                        ${body}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                ${spacerMedium}
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                            <tbody>
+                                ${warning}
+                            </tbody>
+                        </table>
 
-                <div style="
-                    font-weight: 700;
-                    color: #294b59;
-                    font-size: 13px;
-                ">
-                    Obsah e-mailu
-                </div>
-
-                ${spacerSmall}
-
-                <div class="o_mail_plugin_logged_email_body" style="
-                    background: #ffffff;
-                    border: 2px solid ${theme.sectionBorder};
-                    border-left: 7px solid ${theme.accent};
-                    border-radius: 10px;
-                    padding: 24px 26px;
-                    color: #1f2933;
-                    font-size: 13px;
-                    line-height: 1.7;
-                    word-break: break-word;
-                    overflow-wrap: anywhere;
-                    box-sizing: border-box;
-                    min-height: 70px;
-                ">
-                    ${body}
-                </div>
-
-                ${warning ? spacerMedium : ''}
-                ${warning}
-            </div>
-        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     `
 }
 

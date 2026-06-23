@@ -164,6 +164,7 @@ const theme = isOutgoing
                             border-collapse: separate;
                             border-spacing: 0;
                             border: 2px solid ${theme.outerBorder};
+                            border-radius: 10px 10px 0 0;
                             background-color: ${theme.headerBackground};
                         " bgcolor="${theme.headerBackground}">
                             <tbody>

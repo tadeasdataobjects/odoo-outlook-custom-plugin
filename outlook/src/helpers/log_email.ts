@@ -84,29 +84,29 @@ async function _formatEmailBody(
     const direction = getEmailDirection(email)
     const isOutgoing = direction === 'outgoing'
 
-    const theme = isOutgoing
-        ? {
-              outerBackground: '#fff7df',
-              outerBorder: '#d99a16',
-              headerBackground: '#fff0bf',
-              sectionBorder: '#e9bf66',
-              accent: '#d99a16',
-              titleColor: '#5a3b00',
-              labelColor: '#6b4d12',
-              directionLabel: 'Odchozí e-mail',
-              directionIcon: '📤',
-          }
-        : {
-              outerBackground: '#edf9ef',
-              outerBorder: '#3b9f57',
-              headerBackground: '#d9f2df',
-              sectionBorder: '#8dd39f',
-              accent: '#3b9f57',
-              titleColor: '#234c2e',
-              labelColor: '#315f3c',
-              directionLabel: 'Příchozí e-mail',
-              directionIcon: '📥',
-          }
+const theme = isOutgoing
+    ? {
+          outerBackground: '#eef5ff',
+          outerBorder: '#2f80ed',
+          headerBackground: '#dbeafe',
+          sectionBorder: '#93c5fd',
+          accent: '#2f80ed',
+          titleColor: '#1e3a8a',
+          labelColor: '#1d4ed8',
+          directionLabel: 'Odchozí e-mail',
+          directionIcon: '📤',
+      }
+    : {
+          outerBackground: '#edf9ef',
+          outerBorder: '#3b9f57',
+          headerBackground: '#d9f2df',
+          sectionBorder: '#8dd39f',
+          accent: '#3b9f57',
+          titleColor: '#234c2e',
+          labelColor: '#315f3c',
+          directionLabel: 'Příchozí e-mail',
+          directionIcon: '📥',
+      }
 
     const title = isRepeated
         ? `${theme.directionIcon} ${theme.directionLabel} z Outlooku · opakované vložení`
@@ -149,6 +149,7 @@ async function _formatEmailBody(
             max-width: 100%;
             border-collapse: separate;
             border-spacing: 0;
+            border-radius: 14px;
             border: 4px solid ${theme.outerBorder};
             background-color: ${theme.outerBackground};
             margin: 14px 0 18px 0;
@@ -163,6 +164,7 @@ async function _formatEmailBody(
                             border-collapse: separate;
                             border-spacing: 0;
                             border: 2px solid ${theme.outerBorder};
+                            border-radius: 10px 10px 0 0;
                             background-color: ${theme.headerBackground};
                         " bgcolor="${theme.headerBackground}">
                             <tbody>
